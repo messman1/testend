@@ -1,0 +1,240 @@
+.profile-page {
+  padding: 20px;
+  padding-bottom: 80px;
+}
+
+.profile-header {
+  text-align: center;
+  padding: 30px 20px;
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  margin: 0 auto 16px;
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header h2 {
+  font-size: 22px;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.nickname {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.level-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.points-section {
+  margin-bottom: 20px;
+}
+
+.points-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
+  border-radius: 16px;
+  border: 2px solid #ffd699;
+}
+
+.points-icon {
+  font-size: 32px;
+}
+
+.points-label {
+  font-size: 13px;
+  color: #996600;
+  margin-bottom: 4px;
+}
+
+.points-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #cc8800;
+}
+
+.badges-section,
+.stats-section,
+.history-section {
+  margin-bottom: 24px;
+}
+
+.badges-section h3,
+.stats-section h3,
+.history-section h3 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.badge-card {
+  padding: 14px;
+  background: white;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  padding: 20px;
+  background: white;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #666;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+}
+
+.history-info h4 {
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.history-info p {
+  font-size: 12px;
+  color: #999;
+}
+
+.review-btn {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.review-btn:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.view-all-btn {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #667eea;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-all-btn:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.menu-item:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.menu-item span:first-child {
+  font-size: 20px;
+}
+
+.menu-item span:nth-child(2) {
+  flex: 1;
+  color: #333;
+}
+
+.menu-item .arrow {
+  color: #ccc;
+  font-size: 20px;
+}
