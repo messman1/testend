@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { MeetingProvider } from './context/MeetingContext'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
 import Recommend from './pages/Recommend'
@@ -73,17 +74,19 @@ function Layout({ children }) {
 function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/recommend" element={<Recommend />} />
-          <Route path="/meeting" element={<Meeting />} />
-          <Route path="/meeting/create" element={<Meeting />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-      </Layout>
+      <MeetingProvider>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/recommend" element={<Recommend />} />
+            <Route path="/meeting" element={<Meeting />} />
+            <Route path="/meeting/create" element={<Meeting />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
+        </Layout>
+      </MeetingProvider>
     </Router>
   )
 }

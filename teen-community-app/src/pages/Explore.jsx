@@ -1,80 +1,59 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { searchByCategory, getAllPlaces } from '../services/kakaoApi'
 import './Explore.css'
 
 function Explore() {
   const [searchParams] = useSearchParams()
   const category = searchParams.get('category')
   const [searchTerm, setSearchTerm] = useState('')
+  const [places, setPlaces] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const categories = [
     { id: 'all', icon: '🌟', name: '전체' },
-    { id: 'movie', icon: '🎬', name: '영화관' },
+    { id: 'karaoke', icon: '🎤', name: '코인노래방' },
     { id: 'escape', icon: '🎯', name: '방탈출' },
-    { id: 'karaoke', icon: '🎤', name: '노래방' },
-    { id: 'food', icon: '🍜', name: '먹거리' },
-    { id: 'arcade', icon: '🎮', name: '오락실' },
+    { id: 'board', icon: '🎲', name: '보드게임' },
+    { id: 'movie', icon: '🎬', name: '영화관' },
     { id: 'cafe', icon: '📚', name: '북카페' },
   ]
 
   const [selectedCategory, setSelectedCategory] = useState(category || 'all')
 
-  const places = [
-    {
-      id: 1,
-      name: '미스터리 방탈출 카페',
-      category: 'escape',
-      location: '강남역',
-      price: '15,000원~',
-      rating: 4.8,
-      reviews: 127,
-      image: '🎯'
-    },
-    {
-      id: 2,
-      name: 'CGV 강남점',
-      category: 'movie',
-      location: '강남역',
-      price: '8,000원~',
-      rating: 4.6,
-      reviews: 89,
-      image: '🎬'
-    },
-    {
-      id: 3,
-      name: '엽기떡볶이',
-      category: 'food',
-      location: '홍대입구역',
-      price: '5,000원~',
-      rating: 4.5,
-      reviews: 156,
-      image: '🍜'
-    },
-    {
-      id: 4,
-      name: '코인노래방 24시',
-      category: 'karaoke',
-      location: '신촌역',
-      price: '500원/곡',
-      rating: 4.3,
-      reviews: 92,
-      image: '🎤'
-    },
-    {
-      id: 5,
-      name: '북카페 책과 쉼',
-      category: 'cafe',
-      location: '건대입구역',
-      price: '4,000원~',
-      rating: 4.7,
-      reviews: 73,
-      image: '📚'
-    },
-  ]
+  // 카테고리 변경 시 데이터 로드
+  useEffect(() => {
+    async function loadPlaces() {
+      setLoading(true)
+      setError(null)
 
-  const filteredPlaces = selectedCategory === 'all'
-    ? places
-    : places.filter(place => place.category === selectedCategory)
+      try {
+        let data
+        if (selectedCategory === 'all') {
+          data = await getAllPlaces({ size: 5 })
+        } else {
+          data = await searchByCategory(selectedCategory, { size: 10 })
+        }
+        setPlaces(data)
+      } catch (err) {
+        setError('장소 정보를 불러오는데 실패했습니다.')
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadPlaces()
+  }, [selectedCategory])
+
+  // 검색어 필터링
+  const filteredPlaces = searchTerm
+    ? places.filter(place =>
+        place.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        place.location.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : places
 
   return (
     <div className="page explore-page">
@@ -89,7 +68,7 @@ function Explore() {
           />
         </div>
         <div className="location-tag">
-          📍 강남구
+          📍 서초구
         </div>
       </div>
 
@@ -112,23 +91,67 @@ function Explore() {
         <button className="filter-btn">⭐ 평점순</button>
       </div>
 
-      <div className="places-list">
-        {filteredPlaces.map(place => (
-          <div key={place.id} className="place-card">
-            <div className="place-image">{place.image}</div>
-            <div className="place-details">
-              <h3>{place.name}</h3>
-              <p className="place-location">{place.location}</p>
-              <p className="place-price">{place.price}</p>
-              <div className="place-rating">
-                <span>⭐ {place.rating}</span>
-                <span className="review-count">({place.reviews})</span>
-              </div>
+      {loading && (
+        <div className="loading-state">
+          <span>🔄</span>
+          <p>장소 정보를 불러오는 중...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="error-state">
+          <span>⚠️</span>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="places-list">
+          {filteredPlaces.length === 0 ? (
+            <div className="empty-state">
+              <span>🔍</span>
+              <p>검색 결과가 없습니다.</p>
             </div>
-            <button className="bookmark-btn">🔖</button>
-          </div>
-        ))}
-      </div>
+          ) : (
+            filteredPlaces.map(place => (
+              <div
+                key={place.id}
+                className="place-card"
+                onClick={() => window.open(place.url, '_blank')}
+              >
+                <div className="place-image">
+                  {place.thumbnail ? (
+                    <img
+                      src={place.thumbnail}
+                      alt={place.name}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span className="place-icon" style={{ display: place.thumbnail ? 'none' : 'flex' }}>
+                    {place.icon}
+                  </span>
+                </div>
+                <div className="place-details">
+                  <h3>{place.name}</h3>
+                  <p className="place-location">📍 {place.location}</p>
+                  <p className="place-address">{place.address}</p>
+                  {place.phone && <p className="place-phone">📞 {place.phone}</p>}
+                  <div className="place-distance">
+                    <span>🚶 {place.distance}</span>
+                  </div>
+                </div>
+                <button className="bookmark-btn" onClick={(e) => {
+                  e.stopPropagation()
+                  // 북마크 기능 추가 예정
+                }}>🔖</button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   )
 }
