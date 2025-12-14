@@ -36,3 +36,9 @@ lerna-debug.log*
 
 # OS
 Thumbs.db
+
+# Capacitor
+*.iml
+.gradle/
+local.properties
+*.hprof

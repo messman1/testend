@@ -1,0 +1,145 @@
+.auth-page {
+  padding: 20px;
+  padding-bottom: 100px;
+  min-height: calc(100vh - 140px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 400px;
+  padding: 30px 20px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(244, 164, 96, 0.2);
+  border: 2px solid #F4D3B8;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.auth-header h2 {
+  font-size: 24px;
+  color: #8B5A2B;
+  margin-bottom: 8px;
+}
+
+.auth-header p {
+  font-size: 14px;
+  color: #A0826D;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #8B5A2B;
+}
+
+.form-group input {
+  padding: 14px 16px;
+  border: 2px solid #F4D3B8;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #F4A460;
+}
+
+.form-group input:disabled {
+  background: #FFF8F0;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 12px 16px;
+  background: #fff0f0;
+  border: 1px solid #ffccc7;
+  border-radius: 10px;
+  color: #ff4d4f;
+  font-size: 14px;
+  text-align: center;
+}
+
+.auth-btn {
+  padding: 16px;
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.auth-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(244, 164, 96, 0.4);
+  transform: translateY(-1px);
+}
+
+.auth-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-footer {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.auth-footer p {
+  font-size: 14px;
+  color: #A0826D;
+}
+
+.auth-link {
+  color: #D2691E;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-success {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.success-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.auth-success h2 {
+  font-size: 22px;
+  color: #8B5A2B;
+  margin-bottom: 12px;
+}
+
+.auth-success p {
+  font-size: 14px;
+  color: #A0826D;
+  margin-bottom: 24px;
+}

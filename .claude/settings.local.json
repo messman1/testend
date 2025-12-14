@@ -8,7 +8,28 @@
       "Bash(npm run dev:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebSearch",
+      "WebFetch(domain:dapi.kakao.com)",
+      "Bash(curl:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx cap init:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx cap:*)",
+      "Bash(cat:*)",
+      "Bash(npm pkg set:*)",
+      "Bash(./gradlew.bat assembleDebug)",
+      "Bash(where:*)",
+      "Bash(dir \"C:\\Program Files\\Java\")",
+      "Bash(dir \"C:\\Program Files\\Android\\Android Studio\\jbr\")",
+      "Bash(dir \"C:\\Program Files\")",
+      "Bash(findstr:*)",
+      "Bash(dir \"C:\\Users\\brian\\AppData\\Local\\Android\")",
+      "Bash(dir /s /b \"C:\\Users\\brian\\project\\testend\\teen-community-app\\android\\app\\build\\outputs\")",
+      "Bash(dir /s /b \"C:\\Users\\brian\\project\\testend\\teen-community-app\\android\\app\\build\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(tree:*)"
     ]
   }
 }

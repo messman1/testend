@@ -1,17 +1,26 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllPlaces } from '../services/kakaoApi'
+import { useLocation } from '../context/LocationContext'
 import './Home.css'
 
 function Home() {
   const navigate = useNavigate()
+  const { longitude, latitude, address, loading: locationLoading, error: locationError, refreshLocation } = useLocation()
   const [popularPlaces, setPopularPlaces] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadPopularPlaces() {
+      // 위치 로딩 중이면 대기
+      if (locationLoading) return
+
       try {
-        const places = await getAllPlaces({ size: 3 })
+        const places = await getAllPlaces({
+          size: 3,
+          x: longitude,
+          y: latitude
+        })
         // 상위 5개만 선택
         setPopularPlaces(places.slice(0, 5))
       } catch (error) {
@@ -22,7 +31,7 @@ function Home() {
     }
 
     loadPopularPlaces()
-  }, [])
+  }, [longitude, latitude, locationLoading])
 
   return (
     <div className="page">
@@ -68,8 +77,18 @@ function Home() {
       </div>
 
       <div className="popular-section">
-        <h3>서초구 주변 인기 장소</h3>
-        {loading ? (
+        <div className="popular-header">
+          <h3>📍 {address || '내 주변'} 인기 장소</h3>
+          <button className="refresh-location-btn" onClick={refreshLocation} title="위치 새로고침">
+            🔄
+          </button>
+        </div>
+        {locationError && (
+          <div className="location-error">
+            ⚠️ {locationError}
+          </div>
+        )}
+        {(loading || locationLoading) ? (
           <div className="loading-text">불러오는 중...</div>
         ) : (
           <div className="popular-list">
@@ -77,7 +96,7 @@ function Home() {
               <div
                 key={place.id}
                 className="popular-item"
-                onClick={() => window.open(place.url, '_blank')}
+                onClick={() => navigate(`/place?url=${encodeURIComponent(place.url)}&name=${encodeURIComponent(place.name)}`)}
               >
                 <span className="rank">{index + 1}</span>
                 <div className="place-thumbnail">

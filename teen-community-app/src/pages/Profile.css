@@ -7,15 +7,16 @@
   text-align: center;
   padding: 30px 20px;
   background: white;
-  border-radius: 16px;
+  border-radius: 20px;
   margin-bottom: 20px;
   position: relative;
+  border: 2px solid #F4D3B8;
 }
 
 .profile-avatar {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -23,25 +24,25 @@
   font-size: 40px;
   margin: 0 auto 16px;
   border: 4px solid white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(244, 164, 96, 0.3);
 }
 
 .profile-header h2 {
   font-size: 22px;
   margin-bottom: 6px;
-  color: #333;
+  color: #8B5A2B;
 }
 
 .nickname {
   font-size: 14px;
-  color: #666;
+  color: #A0826D;
   margin-bottom: 12px;
 }
 
 .level-badge {
   display: inline-block;
   padding: 6px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
   color: white;
   border-radius: 20px;
   font-size: 13px;
@@ -57,9 +58,9 @@
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
+  background: linear-gradient(135deg, #FFF8F0 0%, #FFEEDD 100%);
   border-radius: 16px;
-  border: 2px solid #ffd699;
+  border: 2px solid #F4D3B8;
 }
 
 .points-icon {
@@ -68,14 +69,14 @@
 
 .points-label {
   font-size: 13px;
-  color: #996600;
+  color: #A0826D;
   margin-bottom: 4px;
 }
 
 .points-value {
   font-size: 24px;
   font-weight: bold;
-  color: #cc8800;
+  color: #D2691E;
 }
 
 .badges-section,
@@ -89,7 +90,7 @@
 .history-section h3 {
   font-size: 18px;
   margin-bottom: 12px;
-  color: #333;
+  color: #8B5A2B;
 }
 
 .badges-grid {
@@ -101,10 +102,11 @@
 .badge-card {
   padding: 14px;
   background: white;
-  border: 2px solid #f0f0f0;
-  border-radius: 12px;
+  border: 2px solid #F4D3B8;
+  border-radius: 16px;
   font-size: 14px;
   text-align: center;
+  color: #8B5A2B;
 }
 
 .stats-grid {
@@ -116,8 +118,8 @@
 .stat-card {
   padding: 20px;
   background: white;
-  border: 2px solid #f0f0f0;
-  border-radius: 12px;
+  border: 2px solid #F4D3B8;
+  border-radius: 16px;
   text-align: center;
 }
 
@@ -129,13 +131,13 @@
 .stat-value {
   font-size: 20px;
   font-weight: bold;
-  color: #667eea;
+  color: #D2691E;
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 11px;
-  color: #666;
+  color: #A0826D;
 }
 
 .history-list {
@@ -151,27 +153,27 @@
   align-items: center;
   padding: 16px;
   background: white;
-  border: 2px solid #f0f0f0;
-  border-radius: 12px;
+  border: 2px solid #F4D3B8;
+  border-radius: 16px;
 }
 
 .history-info h4 {
   font-size: 15px;
   margin-bottom: 4px;
-  color: #333;
+  color: #8B5A2B;
 }
 
 .history-info p {
   font-size: 12px;
-  color: #999;
+  color: #A0826D;
 }
 
 .review-btn {
   padding: 8px 14px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -179,24 +181,24 @@
 }
 
 .review-btn:hover {
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(244, 164, 96, 0.4);
 }
 
 .view-all-btn {
   width: 100%;
   padding: 12px;
   background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  border: 2px solid #F4D3B8;
+  border-radius: 16px;
   font-size: 14px;
-  color: #667eea;
+  color: #D2691E;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .view-all-btn:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
+  border-color: #F4A460;
+  background: #FFF8F0;
 }
 
 .menu-section {
@@ -212,8 +214,8 @@
   gap: 12px;
   padding: 16px;
   background: white;
-  border: 2px solid #f0f0f0;
-  border-radius: 12px;
+  border: 2px solid #F4D3B8;
+  border-radius: 16px;
   font-size: 15px;
   cursor: pointer;
   transition: all 0.2s;
@@ -221,8 +223,8 @@
 }
 
 .menu-item:hover {
-  border-color: #667eea;
-  background: #f8f9ff;
+  border-color: #F4A460;
+  background: #FFF8F0;
 }
 
 .menu-item span:first-child {
@@ -231,10 +233,70 @@
 
 .menu-item span:nth-child(2) {
   flex: 1;
-  color: #333;
+  color: #8B5A2B;
 }
 
 .menu-item .arrow {
-  color: #ccc;
+  color: #DEB887;
   font-size: 20px;
+}
+
+/* 이메일 표시 */
+.user-email {
+  font-size: 12px;
+  color: #A0826D;
+  margin-bottom: 12px;
+}
+
+/* 로그인/회원가입 버튼 */
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.auth-action-btn {
+  padding: 16px;
+  border: 2px solid #F4D3B8;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+  color: #8B5A2B;
+}
+
+.auth-action-btn.primary {
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
+  color: white;
+  border: none;
+}
+
+.auth-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(244, 164, 96, 0.3);
+}
+
+/* 로그아웃 버튼 */
+.menu-item.logout {
+  border-color: #ffccc7;
+}
+
+.menu-item.logout:hover {
+  border-color: #ff7875;
+  background: #fff1f0;
+}
+
+.menu-item.logout span:nth-child(2) {
+  color: #ff4d4f;
+}
+
+/* 로딩 텍스트 */
+.loading-text {
+  text-align: center;
+  padding: 40px;
+  color: #A0826D;
+  font-size: 14px;
 }

@@ -1,35 +1,47 @@
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation as useRouterLocation, useNavigate } from 'react-router-dom'
 import { MeetingProvider } from './context/MeetingContext'
+import { AuthProvider } from './context/AuthContext'
+import { LocationProvider } from './context/LocationContext'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
 import Recommend from './pages/Recommend'
 import Meeting from './pages/Meeting'
 import Community from './pages/Community'
 import Profile from './pages/Profile'
+import Login from './pages/Login'
+import SignUp from './pages/SignUp'
+import PlaceDetail from './pages/PlaceDetail'
+import WritePost from './pages/WritePost'
+import PostDetail from './pages/PostDetail'
 import './App.css'
 
 function Layout({ children }) {
-  const location = useLocation()
+  const routerLocation = useRouterLocation()
   const navigate = useNavigate()
+
+  // 특정 페이지에서는 하단 네비게이션 숨김
+  const hideNavPaths = ['/login', '/signup', '/place', '/community/write']
+  const hideNav = hideNavPaths.includes(routerLocation.pathname) ||
+                  routerLocation.pathname.startsWith('/community/post/')
 
   const isActive = (path) => {
     if (path === '/') {
-      return location.pathname === '/'
+      return routerLocation.pathname === '/'
     }
-    return location.pathname.startsWith(path)
+    return routerLocation.pathname.startsWith(path)
   }
 
   return (
     <div className="app">
       <header className="header">
-        <h1>🎉 청소년 커뮤니티</h1>
-        <p className="subtitle">시험 끝났는데 뭐하지?</p>
+        <h1>🐶 시험끝 오늘은 놀자!</h1>
       </header>
 
       <main className="main-content">
         {children}
       </main>
 
+      {!hideNav && (
       <nav className="bottom-nav">
         <button
           className={`nav-item ${isActive('/') ? 'active' : ''}`}
@@ -67,6 +79,7 @@ function Layout({ children }) {
           <span>MY</span>
         </button>
       </nav>
+      )}
     </div>
   )
 }
@@ -74,19 +87,28 @@ function Layout({ children }) {
 function App() {
   return (
     <Router>
-      <MeetingProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/recommend" element={<Recommend />} />
-            <Route path="/meeting" element={<Meeting />} />
-            <Route path="/meeting/create" element={<Meeting />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </Layout>
-      </MeetingProvider>
+      <LocationProvider>
+        <AuthProvider>
+          <MeetingProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/recommend" element={<Recommend />} />
+                <Route path="/meeting" element={<Meeting />} />
+                <Route path="/meeting/create" element={<Meeting />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/community/write" element={<WritePost />} />
+                <Route path="/community/post/:postId" element={<PostDetail />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/place" element={<PlaceDetail />} />
+              </Routes>
+            </Layout>
+          </MeetingProvider>
+        </AuthProvider>
+      </LocationProvider>
     </Router>
   )
 }

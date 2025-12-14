@@ -1,33 +1,86 @@
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import './Profile.css'
 
 function Profile() {
-  const user = {
-    name: '홍길동',
-    nickname: '놀이왕',
-    level: 5,
-    points: 1250,
-    badges: ['🎯 방탈출 마스터', '🍜 맛집 헌터', '👥 모임왕']
+  const navigate = useNavigate()
+  const { user, profile, isAuthenticated, signOut, loading } = useAuth()
+
+  // 로그아웃 처리
+  const handleLogout = async () => {
+    console.log('로그아웃 버튼 클릭됨')
+    try {
+      const result = await signOut()
+      console.log('로그아웃 결과:', result)
+      navigate('/')
+    } catch (err) {
+      console.error('로그아웃 에러:', err)
+    }
+  }
+
+  // 로딩 중 (초기 로딩만)
+  if (loading && !user) {
+    return (
+      <div className="page profile-page">
+        <div className="loading-text">불러오는 중...</div>
+      </div>
+    )
+  }
+
+  // 비로그인 상태일 때
+  if (!isAuthenticated) {
+    return (
+      <div className="page profile-page">
+        <div className="profile-header">
+          <div className="profile-avatar">👤</div>
+          <h2>로그인이 필요합니다</h2>
+          <p className="nickname">커뮤니티에 참여하려면 로그인하세요</p>
+        </div>
+
+        <div className="auth-actions">
+          <button
+            type="button"
+            className="auth-action-btn primary"
+            onClick={() => navigate('/login')}
+          >
+            로그인
+          </button>
+          <button
+            type="button"
+            className="auth-action-btn"
+            onClick={() => navigate('/signup')}
+          >
+            회원가입
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // 프로필 데이터 구성
+  const displayProfile = {
+    name: profile?.nickname || user?.user_metadata?.nickname || '사용자',
+    nickname: profile?.nickname || user?.user_metadata?.nickname || user?.email?.split('@')[0] || '익명',
+    email: user?.email || '',
+    level: profile?.level || 1,
+    points: profile?.points || 0,
+    badges: profile?.badges || []
   }
 
   const stats = [
-    { label: '다녀온 장소', value: 24, icon: '📍' },
-    { label: '참여한 모임', value: 15, icon: '👥' },
-    { label: '작성한 후기', value: 18, icon: '✏️' }
-  ]
-
-  const visitedPlaces = [
-    { name: '미스터리 방탈출', category: '방탈출', date: '2025-01-15' },
-    { name: 'CGV 강남점', category: '영화관', date: '2025-01-10' },
-    { name: '엽기떡볶이', category: '먹거리', date: '2025-01-08' }
+    { label: '다녀온 장소', value: 0, icon: '📍' },
+    { label: '참여한 모임', value: 0, icon: '👥' },
+    { label: '작성한 후기', value: 0, icon: '✏️' }
   ]
 
   return (
     <div className="page profile-page">
       <div className="profile-header">
         <div className="profile-avatar">👤</div>
-        <h2>{user.name}</h2>
-        <p className="nickname">@{user.nickname}</p>
-        <div className="level-badge">Lv. {user.level}</div>
+        <h2>{displayProfile.name}</h2>
+        <p className="nickname">@{displayProfile.nickname}</p>
+        <p className="user-email">{displayProfile.email}</p>
+        <div className="level-badge">Lv. {displayProfile.level}</div>
       </div>
 
       <div className="points-section">
@@ -35,21 +88,23 @@ function Profile() {
           <span className="points-icon">⭐</span>
           <div>
             <div className="points-label">포인트</div>
-            <div className="points-value">{user.points}P</div>
+            <div className="points-value">{displayProfile.points}P</div>
           </div>
         </div>
       </div>
 
-      <div className="badges-section">
-        <h3>내 뱃지</h3>
-        <div className="badges-grid">
-          {user.badges.map((badge, index) => (
-            <div key={index} className="badge-card">
-              {badge}
-            </div>
-          ))}
+      {displayProfile.badges.length > 0 && (
+        <div className="badges-section">
+          <h3>내 뱃지</h3>
+          <div className="badges-grid">
+            {displayProfile.badges.map((badge, index) => (
+              <div key={index} className="badge-card">
+                {badge}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="stats-section">
         <h3>활동 통계</h3>
@@ -62,22 +117,6 @@ function Profile() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="history-section">
-        <h3>최근 다녀온 곳</h3>
-        <div className="history-list">
-          {visitedPlaces.map((place, index) => (
-            <div key={index} className="history-item">
-              <div className="history-info">
-                <h4>{place.name}</h4>
-                <p>{place.category} · {place.date}</p>
-              </div>
-              <button className="review-btn">후기 쓰기</button>
-            </div>
-          ))}
-        </div>
-        <button className="view-all-btn">전체 보기</button>
       </div>
 
       <div className="menu-section">
@@ -94,6 +133,11 @@ function Profile() {
         <button className="menu-item">
           <span>⚙️</span>
           <span>설정</span>
+          <span className="arrow">›</span>
+        </button>
+        <button type="button" className="menu-item logout" onClick={handleLogout}>
+          <span>🚪</span>
+          <span>로그아웃</span>
           <span className="arrow">›</span>
         </button>
       </div>

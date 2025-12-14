@@ -1,0 +1,40 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportHeight="108"
+    android:viewportWidth="108">
+    <!-- 강아지 발바닥 모양 아이콘 -->
+    <!-- 메인 패드 (큰 원) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,68
+                         C54,68 42,68 38,60
+                         C34,52 36,42 46,38
+                         C50,36 58,36 62,38
+                         C72,42 74,52 70,60
+                         C66,68 54,68 54,68Z"/>
+    <!-- 작은 패드 1 (왼쪽 위) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,38
+                         a6,6 0,1 1,12 0
+                         a6,6 0,1 1,-12 0"/>
+    <!-- 작은 패드 2 (오른쪽 위) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M58,38
+                         a6,6 0,1 1,12 0
+                         a6,6 0,1 1,-12 0"/>
+    <!-- 작은 패드 3 (왼쪽) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,50
+                         a5,5 0,1 1,10 0
+                         a5,5 0,1 1,-10 0"/>
+    <!-- 작은 패드 4 (오른쪽) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,50
+                         a5,5 0,1 1,10 0
+                         a5,5 0,1 1,-10 0"/>
+</vector>
