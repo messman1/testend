@@ -47,15 +47,20 @@ testend/
 │   │   │   ├── Recommend.jsx   # 추천 - "오늘 뭐하지?" 맞춤 추천
 │   │   │   ├── Meeting.jsx     # 모임 - 친구들과 모임 만들기
 │   │   │   ├── Community.jsx   # 소식 - 커뮤니티 피드
+│   │   │   ├── WritePost.jsx   # 글쓰기 페이지
+│   │   │   ├── PostDetail.jsx  # 게시글 상세 + 댓글
+│   │   │   ├── PlaceDetail.jsx # 장소 상세 (카카오맵 iframe)
 │   │   │   ├── Profile.jsx     # 프로필 - 내 활동 통계 및 뱃지
 │   │   │   ├── Login.jsx       # 로그인 페이지
 │   │   │   └── SignUp.jsx      # 회원가입 페이지
 │   │   ├── services/
 │   │   │   ├── kakaoApi.js     # 카카오 로컬 API 서비스
-│   │   │   └── supabase.js     # Supabase 클라이언트 및 인증 함수
+│   │   │   ├── supabase.js     # Supabase 클라이언트 및 인증 함수
+│   │   │   └── postsApi.js     # 게시글/댓글/좋아요 API
 │   │   └── context/
 │   │       ├── MeetingContext.jsx  # 모임 상태 관리
-│   │       └── AuthContext.jsx     # 인증 상태 관리
+│   │       ├── AuthContext.jsx     # 인증 상태 관리
+│   │       └── LocationContext.jsx # GPS 위치 상태 관리
 │   ├── android/                # Android 네이티브 프로젝트 (Capacitor)
 │   ├── .env                    # 환경 변수 (Supabase 키)
 │   ├── capacitor.config.json   # Capacitor 설정
@@ -81,9 +86,12 @@ testend/
 - `/meeting` - Meeting (모임 목록)
 - `/meeting/create` - Meeting (모임 생성, 동일 컴포넌트 재사용)
 - `/community` - Community (소식 피드)
+- `/community/write` - WritePost (글쓰기)
+- `/community/post/:postId` - PostDetail (게시글 상세 + 댓글)
 - `/profile` - Profile (내 프로필)
 - `/login` - Login (로그인)
 - `/signup` - SignUp (회원가입)
+- `/place` - PlaceDetail (장소 상세 - 카카오맵 iframe)
 
 ### 네비게이션
 
@@ -124,7 +132,8 @@ VITE_SUPABASE_ANON_KEY=eyJhbGci...
 ```
 
 ### Supabase 테이블 구조
-profiles 테이블이 필요합니다. Supabase SQL Editor에서 실행:
+
+#### 1. profiles 테이블 (회원 프로필)
 ```sql
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
@@ -138,15 +147,63 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+```
 
-CREATE POLICY "Public profiles are viewable by everyone"
-  ON public.profiles FOR SELECT USING (true);
+#### 2. posts 테이블 (커뮤니티 게시글)
+```sql
+CREATE TABLE posts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT,
+  type TEXT NOT NULL DEFAULT 'general',
+  image_url TEXT,
+  likes_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-CREATE POLICY "Users can update own profile"
-  ON public.profiles FOR UPDATE USING (auth.uid() = id);
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for all users" ON posts FOR SELECT USING (true);
+CREATE POLICY "Enable insert for authenticated users" ON posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Enable update for own posts" ON posts FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Enable delete for own posts" ON posts FOR DELETE USING (auth.uid() = user_id);
+```
 
-CREATE POLICY "Users can insert own profile"
-  ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+#### 3. comments 테이블 (댓글)
+```sql
+CREATE TABLE comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read comments" ON comments FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can create comments" ON comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own comments" ON comments FOR DELETE USING (auth.uid() = user_id);
+```
+
+#### 4. likes 테이블 (좋아요)
+```sql
+CREATE TABLE likes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
+
+ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read likes" ON likes FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can create likes" ON likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own likes" ON likes FOR DELETE USING (auth.uid() = user_id);
 ```
 
 ## Git 저장소
@@ -156,7 +213,28 @@ CREATE POLICY "Users can insert own profile"
 
 ## 최근 작업 내역
 
-### 2024-12-14
+### 2024-12-14 (2차)
+- **GPS 기반 위치 서비스 구현**
+  - LocationContext.jsx: GPS 위치 상태 관리
+  - 브라우저 Geolocation API로 현재 위치 획득
+  - 카카오 API로 좌표 → 동 이름 변환 (예: "역삼동")
+  - 검색 반경 3km → 2km로 변경
+  - 위치 새로고침 버튼 추가
+
+- **장소 상세 페이지 (앱 내 iframe)**
+  - PlaceDetail.jsx: 카카오맵 페이지를 iframe으로 표시
+  - 장소 클릭 시 새 창이 아닌 앱 내에서 보기
+  - 뒤로가기 버튼, 새 창 열기 버튼 제공
+
+- **커뮤니티 기능 구현 (Supabase)**
+  - postsApi.js: 게시글/댓글/좋아요 CRUD API
+  - Community.jsx: 게시글 목록 (카테고리 필터링)
+  - WritePost.jsx: 글쓰기 페이지
+  - PostDetail.jsx: 게시글 상세 + 댓글 기능
+  - 좋아요 토글, 댓글 작성/삭제
+  - 로그인 사용자만 글쓰기/좋아요/댓글 가능
+
+### 2024-12-14 (1차)
 - **Supabase 회원가입/로그인 기능 구현**
   - AuthContext.jsx: 인증 상태 관리
   - supabase.js: Supabase 클라이언트 및 인증 함수
@@ -189,8 +267,9 @@ CREATE POLICY "Users can insert own profile"
 
 ## 다음 단계
 
-- 커뮤니티 피드 실제 데이터 연동 (Supabase)
+- **커뮤니티 기능 완성**: Supabase posts 테이블 생성 필요 (현재 DB 연결 대기 중)
 - 모임 데이터 Supabase 연동 (현재 localStorage)
-- 프로필 이미지 업로드 기능
+- 프로필 이미지 업로드 기능 (Supabase Storage)
 - 친구 시스템 구현
 - 푸시 알림 설정
+- Android APK 빌드 및 배포

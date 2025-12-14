@@ -1,11 +1,14 @@
 // 카카오 Local API 서비스
 const KAKAO_API_KEY = '6c3d9e2d50c653818b7fbee8dcd1b9f5';
 
-// 서초구 중심 좌표
-const SEOCHO_CENTER = {
-  x: 127.0324,  // 경도
-  y: 37.4837    // 위도
+// 기본 중심 좌표 (서울 시청 - GPS 실패시 사용)
+const DEFAULT_CENTER = {
+  x: 126.9784147,  // 경도
+  y: 37.5666805    // 위도
 };
+
+// 검색 반경 (2km)
+const DEFAULT_RADIUS = 2000;
 
 // ============================================
 // 청소년 친화적 필터링 설정
@@ -164,9 +167,9 @@ async function fetchThumbnails(places, category) {
 
 async function searchPlaces(keyword, options = {}) {
   const {
-    x = SEOCHO_CENTER.x,
-    y = SEOCHO_CENTER.y,
-    radius = 3000,
+    x = DEFAULT_CENTER.x,
+    y = DEFAULT_CENTER.y,
+    radius = DEFAULT_RADIUS,
     size = 15
   } = options;
 
@@ -293,7 +296,8 @@ export {
   CATEGORY_KEYWORDS,
   CATEGORY_ICONS,
   DEFAULT_THUMBNAILS,
-  SEOCHO_CENTER,
+  DEFAULT_CENTER,
+  DEFAULT_RADIUS,
   BLACKLIST_KEYWORDS,
   BLACKLIST_CATEGORIES
 };

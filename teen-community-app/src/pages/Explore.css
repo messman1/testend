@@ -37,10 +37,18 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #f0f0f0;
+  background: linear-gradient(135deg, #FFF8F0 0%, #F4D3B8 100%);
+  border: 2px solid #F4A460;
   border-radius: 20px;
   font-size: 13px;
-  color: #666;
+  color: #8B5A2B;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.location-tag:hover {
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
+  color: white;
 }
 
 .category-tabs {

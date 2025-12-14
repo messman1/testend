@@ -1,0 +1,206 @@
+.write-post-page {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 60px);
+}
+
+.write-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 2px solid #F4D3B8;
+}
+
+.write-header h2 {
+  font-size: 18px;
+  color: #8B5A2B;
+  margin: 0;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #8B5A2B;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #FFF8F0;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 164, 96, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.write-form {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.error-message {
+  background: #FFF0E0;
+  border: 1px solid #F4A460;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #8B5A2B;
+}
+
+.type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.type-selector label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #8B5A2B;
+}
+
+.type-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.type-btn {
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid #F4D3B8;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #8B5A2B;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  border-color: #F4A460;
+}
+
+.type-btn.active {
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.input-group {
+  position: relative;
+}
+
+.title-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #F4D3B8;
+  border-radius: 12px;
+  font-size: 16px;
+  color: #8B5A2B;
+  background: white;
+  transition: all 0.2s;
+}
+
+.title-input:focus {
+  outline: none;
+  border-color: #F4A460;
+}
+
+.title-input::placeholder {
+  color: #A0826D;
+}
+
+.content-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #F4D3B8;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #8B5A2B;
+  background: white;
+  resize: none;
+  transition: all 0.2s;
+  line-height: 1.6;
+}
+
+.content-input:focus {
+  outline: none;
+  border-color: #F4A460;
+}
+
+.content-input::placeholder {
+  color: #A0826D;
+}
+
+.char-count {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 12px;
+  color: #A0826D;
+}
+
+/* 로그인 필요 상태 */
+.login-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 140px);
+  text-align: center;
+  padding: 20px;
+}
+
+.login-required span {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.login-required p {
+  font-size: 16px;
+  color: #8B5A2B;
+  margin-bottom: 20px;
+}
+
+.login-required button {
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 20px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-required button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 164, 96, 0.4);
+}

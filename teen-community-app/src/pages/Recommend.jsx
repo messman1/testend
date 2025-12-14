@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { searchByCategory, CATEGORY_ICONS } from '../services/kakaoApi'
+import { useLocation } from '../context/LocationContext'
 import './Recommend.css'
 
 function Recommend() {
   const navigate = useNavigate()
+  const { longitude, latitude, address } = useLocation()
   const [step, setStep] = useState(1)
   const [selections, setSelections] = useState({
     mood: null,
@@ -14,6 +16,9 @@ function Recommend() {
   const [loading, setLoading] = useState(false)
   const [recommendations, setRecommendations] = useState([])
   const [randomPlace, setRandomPlace] = useState(null)
+
+  // 위치 옵션
+  const locationOptions = { x: longitude, y: latitude }
 
   // 분위기별 추천 카테고리 매핑
   const moodCategories = {
@@ -60,10 +65,10 @@ function Recommend() {
       const categories = moodCategories[finalSelections.mood] || ['karaoke', 'escape']
       const template = courseTemplates[finalSelections.time] || courseTemplates.medium
 
-      // 각 카테고리에서 장소 가져오기
+      // 각 카테고리에서 장소 가져오기 (현재 위치 기준)
       const allPlaces = []
       for (const category of categories) {
-        const places = await searchByCategory(category, { size: 5 })
+        const places = await searchByCategory(category, { size: 5, ...locationOptions })
         allPlaces.push(...places.map(p => ({ ...p, categoryType: category })))
       }
 
@@ -165,7 +170,7 @@ function Recommend() {
     try {
       const categories = ['karaoke', 'escape', 'board', 'movie', 'cafe']
       const randomCategory = categories[Math.floor(Math.random() * categories.length)]
-      const places = await searchByCategory(randomCategory, { size: 10 })
+      const places = await searchByCategory(randomCategory, { size: 10, ...locationOptions })
 
       if (places.length > 0) {
         const randomIndex = Math.floor(Math.random() * places.length)
@@ -282,7 +287,7 @@ function Recommend() {
                         <div
                           key={place.id}
                           className="course-place"
-                          onClick={() => window.open(place.url, '_blank')}
+                          onClick={() => navigate(`/place?url=${encodeURIComponent(place.url)}&name=${encodeURIComponent(place.name)}`)}
                         >
                           <div className="place-number">{index + 1}</div>
                           <div className="place-thumb">
@@ -328,7 +333,7 @@ function Recommend() {
                 {randomPlace && (
                   <div
                     className="random-result"
-                    onClick={() => window.open(randomPlace.url, '_blank')}
+                    onClick={() => navigate(`/place?url=${encodeURIComponent(randomPlace.url)}&name=${encodeURIComponent(randomPlace.name)}`)}
                   >
                     <div className="random-place-thumb">
                       {randomPlace.thumbnail ? (

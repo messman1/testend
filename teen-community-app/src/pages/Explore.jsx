@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { searchByCategory, getAllPlaces } from '../services/kakaoApi'
+import { useLocation } from '../context/LocationContext'
 import './Explore.css'
 
 function Explore() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const category = searchParams.get('category')
+  const { longitude, latitude, address, loading: locationLoading, refreshLocation } = useLocation()
   const [searchTerm, setSearchTerm] = useState('')
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
@@ -22,18 +25,26 @@ function Explore() {
 
   const [selectedCategory, setSelectedCategory] = useState(category || 'all')
 
-  // 카테고리 변경 시 데이터 로드
+  // 카테고리 또는 위치 변경 시 데이터 로드
   useEffect(() => {
     async function loadPlaces() {
+      // 위치 로딩 중이면 대기
+      if (locationLoading) return
+
       setLoading(true)
       setError(null)
 
       try {
+        const locationOptions = {
+          x: longitude,
+          y: latitude
+        }
+
         let data
         if (selectedCategory === 'all') {
-          data = await getAllPlaces({ size: 5 })
+          data = await getAllPlaces({ size: 5, ...locationOptions })
         } else {
-          data = await searchByCategory(selectedCategory, { size: 10 })
+          data = await searchByCategory(selectedCategory, { size: 10, ...locationOptions })
         }
         setPlaces(data)
       } catch (err) {
@@ -45,7 +56,7 @@ function Explore() {
     }
 
     loadPlaces()
-  }, [selectedCategory])
+  }, [selectedCategory, longitude, latitude, locationLoading])
 
   // 검색어 필터링
   const filteredPlaces = searchTerm
@@ -67,8 +78,8 @@ function Explore() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="location-tag">
-          📍 서초구
+        <div className="location-tag" onClick={refreshLocation}>
+          📍 {address || '현재 위치'}
         </div>
       </div>
 
@@ -91,10 +102,10 @@ function Explore() {
         <button className="filter-btn">⭐ 평점순</button>
       </div>
 
-      {loading && (
+      {(loading || locationLoading) && (
         <div className="loading-state">
           <span>🔄</span>
-          <p>장소 정보를 불러오는 중...</p>
+          <p>{locationLoading ? '위치 정보를 가져오는 중...' : '장소 정보를 불러오는 중...'}</p>
         </div>
       )}
 
@@ -105,7 +116,7 @@ function Explore() {
         </div>
       )}
 
-      {!loading && !error && (
+      {!loading && !locationLoading && !error && (
         <div className="places-list">
           {filteredPlaces.length === 0 ? (
             <div className="empty-state">
@@ -117,7 +128,7 @@ function Explore() {
               <div
                 key={place.id}
                 className="place-card"
-                onClick={() => window.open(place.url, '_blank')}
+                onClick={() => navigate(`/place?url=${encodeURIComponent(place.url)}&name=${encodeURIComponent(place.name)}`)}
               >
                 <div className="place-image">
                   {place.thumbnail ? (

@@ -104,6 +104,49 @@
   margin-top: 30px;
 }
 
+.popular-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.popular-header h3 {
+  font-size: 18px;
+  color: #8B5A2B;
+  margin: 0;
+}
+
+.refresh-location-btn {
+  background: white;
+  border: 2px solid #F4D3B8;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.refresh-location-btn:hover {
+  border-color: #F4A460;
+  background: #FFF8F0;
+  transform: rotate(180deg);
+}
+
+.location-error {
+  background: #FFF0E0;
+  border: 1px solid #F4A460;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #8B5A2B;
+  margin-bottom: 12px;
+}
+
 .popular-section h3 {
   font-size: 18px;
   margin-bottom: 16px;
