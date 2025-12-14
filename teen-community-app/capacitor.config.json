@@ -1,5 +1,8 @@
 {
   "appId": "com.teencommunity.app",
-  "appName": "청소년 커뮤니티",
-  "webDir": "dist"
+  "appName": "시험끝 오늘은 놀자",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#FFF8F0"
+  }
 }

@@ -1,16 +1,22 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { MeetingProvider } from './context/MeetingContext'
+import { AuthProvider } from './context/AuthContext'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
 import Recommend from './pages/Recommend'
 import Meeting from './pages/Meeting'
 import Community from './pages/Community'
 import Profile from './pages/Profile'
+import Login from './pages/Login'
+import SignUp from './pages/SignUp'
 import './App.css'
 
 function Layout({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
+
+  // 인증 페이지에서는 하단 네비게이션 숨김
+  const hideNav = ['/login', '/signup'].includes(location.pathname)
 
   const isActive = (path) => {
     if (path === '/') {
@@ -22,14 +28,14 @@ function Layout({ children }) {
   return (
     <div className="app">
       <header className="header">
-        <h1>🎉 청소년 커뮤니티</h1>
-        <p className="subtitle">시험 끝났는데 뭐하지?</p>
+        <h1>🐶 시험끝 오늘은 놀자!</h1>
       </header>
 
       <main className="main-content">
         {children}
       </main>
 
+      {!hideNav && (
       <nav className="bottom-nav">
         <button
           className={`nav-item ${isActive('/') ? 'active' : ''}`}
@@ -67,6 +73,7 @@ function Layout({ children }) {
           <span>MY</span>
         </button>
       </nav>
+      )}
     </div>
   )
 }
@@ -74,19 +81,23 @@ function Layout({ children }) {
 function App() {
   return (
     <Router>
-      <MeetingProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/explore" element={<Explore />} />
-            <Route path="/recommend" element={<Recommend />} />
-            <Route path="/meeting" element={<Meeting />} />
-            <Route path="/meeting/create" element={<Meeting />} />
-            <Route path="/community" element={<Community />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </Layout>
-      </MeetingProvider>
+      <AuthProvider>
+        <MeetingProvider>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/explore" element={<Explore />} />
+              <Route path="/recommend" element={<Recommend />} />
+              <Route path="/meeting" element={<Meeting />} />
+              <Route path="/meeting/create" element={<Meeting />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+            </Routes>
+          </Layout>
+        </MeetingProvider>
+      </AuthProvider>
     </Router>
   )
 }
