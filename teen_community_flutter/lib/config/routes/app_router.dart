@@ -5,6 +5,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/explore/presentation/pages/explore_page.dart';
 import '../../features/places/presentation/pages/place_detail_page.dart';
 import '../../features/common/presentation/widgets/app_scaffold.dart';
 
@@ -31,7 +32,7 @@ class AppRouter {
           // 탐색
           GoRoute(
             path: RouteNames.explore,
-            builder: (context, state) => const PlaceholderScreen(title: '탐색'),
+            builder: (context, state) => const ExplorePage(),
           ),
 
           // 추천
