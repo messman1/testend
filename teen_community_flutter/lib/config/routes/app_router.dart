@@ -5,7 +5,15 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/bookmarked_page.dart';
+import '../../features/profile/presentation/pages/friends_page.dart';
+import '../../features/profile/presentation/pages/settings_page.dart';
 import '../../features/explore/presentation/pages/explore_page.dart';
+import '../../features/recommend/presentation/pages/recommend_page.dart';
+import '../../features/meeting/presentation/pages/meeting_page.dart';
+import '../../features/community/presentation/pages/community_page.dart';
+import '../../features/community/presentation/pages/write_post_page.dart';
+import '../../features/community/presentation/pages/post_detail_page.dart';
 import '../../features/places/presentation/pages/place_detail_page.dart';
 import '../../features/common/presentation/widgets/app_scaffold.dart';
 
@@ -38,33 +46,33 @@ class AppRouter {
           // 추천
           GoRoute(
             path: RouteNames.recommend,
-            builder: (context, state) => const PlaceholderScreen(title: '추천'),
+            builder: (context, state) => const RecommendPage(),
           ),
 
           // 모임
           GoRoute(
             path: RouteNames.meeting,
-            builder: (context, state) => const PlaceholderScreen(title: '모임'),
+            builder: (context, state) => const MeetingPage(),
           ),
           GoRoute(
             path: RouteNames.meetingCreate,
-            builder: (context, state) => const PlaceholderScreen(title: '모임 만들기'),
+            builder: (context, state) => const MeetingPage(),
           ),
 
           // 커뮤니티
           GoRoute(
             path: RouteNames.community,
-            builder: (context, state) => const PlaceholderScreen(title: '소식'),
+            builder: (context, state) => const CommunityPage(),
           ),
           GoRoute(
             path: RouteNames.communityWrite,
-            builder: (context, state) => const PlaceholderScreen(title: '글쓰기'),
+            builder: (context, state) => const WritePostPage(),
           ),
           GoRoute(
             path: RouteNames.postDetail,
             builder: (context, state) {
               final postId = state.pathParameters['postId'] ?? '';
-              return PlaceholderScreen(title: '게시글 상세 ($postId)');
+              return PostDetailPage(postId: postId);
             },
           ),
 
@@ -75,15 +83,15 @@ class AppRouter {
           ),
           GoRoute(
             path: RouteNames.bookmarked,
-            builder: (context, state) => const PlaceholderScreen(title: '북마크'),
+            builder: (context, state) => const BookmarkedPage(),
           ),
           GoRoute(
             path: RouteNames.friends,
-            builder: (context, state) => const PlaceholderScreen(title: '친구'),
+            builder: (context, state) => const FriendsPage(),
           ),
           GoRoute(
             path: RouteNames.settings,
-            builder: (context, state) => const PlaceholderScreen(title: '설정'),
+            builder: (context, state) => const SettingsPage(),
           ),
 
           // 장소 상세
