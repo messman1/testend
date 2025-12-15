@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/post_model.dart';
+import '../../providers/posts_provider.dart';
 import '../../../auth/providers/auth_provider.dart';
 
 /// 글쓰기 페이지
@@ -50,15 +51,25 @@ class _WritePostPageState extends ConsumerState<WritePostPage> {
       return;
     }
 
-    // TODO: Supabase에 게시글 저장
-    // await ref.read(postsRepositoryProvider).createPost(...)
+    try {
+      await ref.read(postsControllerProvider.notifier).createPost(
+            title: _titleController.text.trim(),
+            content: _contentController.text.trim(),
+            type: _selectedType,
+          );
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('게시글이 작성되었습니다')),
-    );
-    if (!mounted) return;
-    context.pop();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('게시글이 작성되었습니다')),
+      );
+      if (!mounted) return;
+      context.pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('게시글 작성에 실패했습니다: $e')),
+      );
+    }
   }
 
   @override

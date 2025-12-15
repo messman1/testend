@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/post_model.dart';
+import '../../providers/posts_provider.dart';
+import '../../data/posts_repository.dart';
 import '../../../auth/providers/auth_provider.dart';
 
 /// 게시글 상세 페이지
@@ -18,60 +20,6 @@ class PostDetailPage extends ConsumerStatefulWidget {
 
 class _PostDetailPageState extends ConsumerState<PostDetailPage> {
   final _commentController = TextEditingController();
-  final List<CommentModel> _comments = [];
-  bool _isLiked = false;
-  int _likesCount = 0;
-
-  // 샘플 게시글 (실제로는 Supabase에서 가져와야 함)
-  late PostModel _post;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPost();
-  }
-
-  void _loadPost() {
-    // TODO: Supabase에서 게시글 및 댓글 로드
-    setState(() {
-      _post = PostModel(
-        id: widget.postId,
-        userId: 'sample1',
-        userNickname: '청소년1',
-        title: '오늘 강남에서 보드게임 할 사람!',
-        content: '시험 끝나고 친구들이랑 보드게임 하려고 하는데 같이 하실 분 구해요~\n'
-            '시간은 오후 3시쯤 생각하고 있어요.\n'
-            '장소는 강남역 근처 보드게임 카페로 갈 예정입니다!',
-        type: 'meetup',
-        imageUrl: null,
-        likesCount: 12,
-        commentsCount: 5,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-      );
-      _likesCount = _post.likesCount;
-
-      // 샘플 댓글
-      _comments.addAll([
-        CommentModel(
-          id: '1',
-          postId: widget.postId,
-          userId: 'user1',
-          userNickname: '댓글러1',
-          content: '저도 참여하고 싶어요!',
-          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        ),
-        CommentModel(
-          id: '2',
-          postId: widget.postId,
-          userId: 'user2',
-          userNickname: '댓글러2',
-          content: '몇 명 정도 모집하시나요?',
-          createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        ),
-      ]);
-    });
-  }
 
   @override
   void dispose() {
@@ -89,12 +37,14 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
       return;
     }
 
-    setState(() {
-      _isLiked = !_isLiked;
-      _likesCount += _isLiked ? 1 : -1;
-    });
-
-    // TODO: Supabase에 좋아요 토글
+    try {
+      await ref.read(postsControllerProvider.notifier).toggleLike(widget.postId);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('좋아요 처리에 실패했습니다: $e')),
+      );
+    }
   }
 
   Future<void> _submitComment() async {
@@ -111,236 +61,308 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
       return;
     }
 
-    // TODO: Supabase에 댓글 저장
-    final newComment = CommentModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      postId: widget.postId,
-      userId: user.id,
-      userNickname: user.nickname,
-      content: _commentController.text.trim(),
-      createdAt: DateTime.now(),
-    );
+    try {
+      await ref.read(postsControllerProvider.notifier).createComment(
+            postId: widget.postId,
+            content: _commentController.text.trim(),
+          );
 
-    setState(() {
-      _comments.insert(0, newComment);
       _commentController.clear();
-    });
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('댓글이 작성되었습니다')),
-    );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('댓글이 작성되었습니다')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('댓글 작성에 실패했습니다: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final postType = PostType.fromCode(_post.type);
+    final postAsync = ref.watch(postProvider(widget.postId));
+    final commentsAsync = ref.watch(commentsProvider(widget.postId));
+    final likeStatusAsync = ref.watch(likeStatusProvider(widget.postId));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('게시글'),
       ),
-      body: Column(
-        children: [
-          // 게시글 내용
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 게시글 헤더
-                  Padding(
-                    padding: const EdgeInsets.all(16),
+      body: postAsync.when(
+        data: (post) {
+          final postType = PostType.fromCode(post.type);
+
+          return Column(
+            children: [
+              // 게시글 내용
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(postProvider(widget.postId));
+                    ref.invalidate(commentsProvider(widget.postId));
+                    ref.invalidate(likeStatusProvider(widget.postId));
+                  },
+                  child: SingleChildScrollView(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // 타입
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary
-                                .withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        // 게시글 헤더
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                postType?.icon ?? '💬',
-                                style: const TextStyle(fontSize: 16),
+                              // 타입
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      postType?.icon ?? '💬',
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      postType?.label ?? '일반',
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(height: 16),
+
+                              // 제목
                               Text(
-                                postType?.label ?? '일반',
+                                post.title,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // 작성자 및 시간
+                              Row(
+                                children: [
+                                  Text(
+                                    post.userNickname,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '· ${_getTimeAgo(post.createdAt)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+
+                              // 내용
+                              Text(
+                                post.content,
+                                style: theme.textTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const Divider(height: 1),
+
+                        // 좋아요 버튼
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              likeStatusAsync.when(
+                                data: (isLiked) => InkWell(
+                                  onTap: _toggleLike,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isLiked
+                                          ? theme.colorScheme.primary
+                                              .withValues(alpha: 0.1)
+                                          : theme.colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isLiked
+                                            ? theme.colorScheme.primary
+                                            : theme.colorScheme.outline
+                                                .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          isLiked ? '❤️' : '🤍',
+                                          style: const TextStyle(fontSize: 18),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          post.likesCount.toString(),
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: isLiked
+                                                ? theme.colorScheme.primary
+                                                : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                loading: () => const SizedBox(
+                                  width: 80,
+                                  height: 36,
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
+                                    ),
+                                  ),
+                                ),
+                                error: (_, __) => const SizedBox(),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                '댓글 ${post.commentsCount}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface
+                                      .withValues(alpha: 0.7),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
 
-                        // 제목
-                        Text(
-                          _post.title,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        const Divider(height: 1),
+
+                        // 댓글 목록
+                        commentsAsync.when(
+                          data: (comments) => ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            itemCount: comments.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              return _buildCommentItem(theme, comments[index]);
+                            },
                           ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // 작성자 및 시간
-                        Row(
-                          children: [
-                            Text(
-                              _post.userNickname,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '· ${_getTimeAgo(_post.createdAt)}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-
-                        // 내용
-                        Text(
-                          _post.content,
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Divider(height: 1),
-
-                  // 좋아요 버튼
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        InkWell(
-                          onTap: _toggleLike,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _isLiked
-                                  ? theme.colorScheme.primary
-                                      .withValues(alpha: 0.1)
-                                  : theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: _isLiked
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.outline
-                                        .withValues(alpha: 0.3),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _isLiked ? '❤️' : '🤍',
-                                  style: const TextStyle(fontSize: 18),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _likesCount.toString(),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: _isLiked
-                                        ? theme.colorScheme.primary
-                                        : null,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          loading: () => const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Center(child: CircularProgressIndicator()),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          '댓글 ${_comments.length}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
+                          error: (error, stack) => Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Center(
+                              child: Text(
+                                '댓글을 불러올 수 없습니다',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-
-                  const Divider(height: 1),
-
-                  // 댓글 목록
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _comments.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return _buildCommentItem(theme, _comments[index]);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // 댓글 입력
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              border: Border(
-                top: BorderSide(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _commentController,
-                    decoration: const InputDecoration(
-                      hintText: '댓글을 입력하세요',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+
+              // 댓글 입력
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _commentController,
+                        decoration: const InputDecoration(
+                          hintText: '댓글을 입력하세요',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        maxLines: null,
                       ),
                     ),
-                    maxLines: null,
-                  ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      onPressed: _submitComment,
+                      icon: const Icon(Icons.send),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: _submitComment,
-                  icon: const Icon(Icons.send),
+              ),
+            ],
+          );
+        },
+        loading: () =>
+            const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('⚠️', style: theme.textTheme.displayLarge),
+              const SizedBox(height: 16),
+              Text(
+                '게시글을 불러올 수 없습니다',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.red,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref.invalidate(postProvider(widget.postId));
+                },
+                child: const Text('다시 시도'),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -400,23 +422,4 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
       return '방금 전';
     }
   }
-}
-
-/// 댓글 모델
-class CommentModel {
-  final String id;
-  final String postId;
-  final String userId;
-  final String userNickname;
-  final String content;
-  final DateTime createdAt;
-
-  const CommentModel({
-    required this.id,
-    required this.postId,
-    required this.userId,
-    required this.userNickname,
-    required this.content,
-    required this.createdAt,
-  });
 }

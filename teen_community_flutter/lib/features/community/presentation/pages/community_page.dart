@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
 import '../../domain/models/post_model.dart';
+import '../../providers/posts_provider.dart';
 import '../../../../config/routes/route_names.dart';
 
 /// 커뮤니티 페이지 (소식)
@@ -14,61 +14,7 @@ class CommunityPage extends ConsumerStatefulWidget {
 }
 
 class _CommunityPageState extends ConsumerState<CommunityPage> {
-  final List<PostModel> _posts = [];
   String _selectedType = 'all';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSamplePosts();
-  }
-
-  void _loadSamplePosts() {
-    // 샘플 게시글 (실제로는 Supabase에서 가져와야 함)
-    setState(() {
-      _posts.addAll([
-        PostModel(
-          id: const Uuid().v4(),
-          userId: 'sample1',
-          userNickname: '청소년1',
-          title: '오늘 강남에서 보드게임 할 사람!',
-          content: '시험 끝나고 친구들이랑 보드게임 하려고 하는데 같이 하실 분 구해요~',
-          type: 'meetup',
-          imageUrl: null,
-          likesCount: 12,
-          commentsCount: 5,
-          createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-          updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-        PostModel(
-          id: const Uuid().v4(),
-          userId: 'sample2',
-          userNickname: '청소년2',
-          title: '코인노래방 추천해주세요!',
-          content: '홍대 근처에서 깨끗하고 괜찮은 코인노래방 아시는 분 있나요?',
-          type: 'question',
-          imageUrl: null,
-          likesCount: 8,
-          commentsCount: 3,
-          createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-          updatedAt: DateTime.now().subtract(const Duration(hours: 5)),
-        ),
-        PostModel(
-          id: const Uuid().v4(),
-          userId: 'sample3',
-          userNickname: '청소년3',
-          title: '강남역 방탈출 다녀왔어요',
-          content: '친구 4명이서 다녀왔는데 진짜 재밌었어요! 난이도도 적당하고 스토리도 좋았습니다 ㅎㅎ',
-          type: 'review',
-          imageUrl: null,
-          likesCount: 15,
-          commentsCount: 7,
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-        ),
-      ]);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,42 +123,78 @@ class _CommunityPageState extends ConsumerState<CommunityPage> {
 
   /// 게시글 목록
   Widget _buildPostList(ThemeData theme) {
-    final filteredPosts = _selectedType == 'all'
-        ? _posts
-        : _posts.where((p) => p.type == _selectedType).toList();
+    final postsAsync = ref.watch(postsProvider(_selectedType));
 
-    if (filteredPosts.isEmpty) {
-      return Center(
+    return postsAsync.when(
+      data: (posts) {
+        if (posts.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('📝', style: theme.textTheme.displayLarge),
+                const SizedBox(height: 16),
+                Text(
+                  '아직 게시글이 없습니다',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '첫 번째 글을 작성해보세요!',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(postsProvider(_selectedType));
+          },
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: posts.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _buildPostCard(theme, posts[index]);
+            },
+          ),
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('📝', style: theme.textTheme.displayLarge),
+            Text('⚠️', style: theme.textTheme.displayLarge),
             const SizedBox(height: 16),
             Text(
-              '아직 게시글이 없습니다',
+              '게시글을 불러올 수 없습니다',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Colors.red,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '첫 번째 글을 작성해보세요!',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
+              error.toString(),
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ref.invalidate(postsProvider(_selectedType));
+              },
+              child: const Text('다시 시도'),
             ),
           ],
         ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredPosts.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _buildPostCard(theme, filteredPosts[index]);
-      },
+      ),
     );
   }
 
