@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'route_names.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/signup_page.dart';
 
 /// 앱 라우터 설정 (GoRouter)
 class AppRouter {
@@ -73,11 +75,11 @@ class AppRouter {
       // 인증
       GoRoute(
         path: RouteNames.login,
-        builder: (context, state) => const PlaceholderScreen(title: '로그인'),
+        builder: (context, state) => const LoginPage(),
       ),
       GoRoute(
         path: RouteNames.signup,
-        builder: (context, state) => const PlaceholderScreen(title: '회원가입'),
+        builder: (context, state) => const SignUpPage(),
       ),
 
       // 장소 상세
