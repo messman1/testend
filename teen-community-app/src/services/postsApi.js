@@ -18,6 +18,7 @@ export async function getPosts(options = {}) {
   console.log('getPosts 시작, options:', options)
 
   try {
+    // 먼저 posts만 가져오기 (JOIN 없이)
     let query = supabase
       .from('posts')
       .select('*')
@@ -30,9 +31,11 @@ export async function getPosts(options = {}) {
 
     console.log('posts 쿼리 실행 중...')
 
-    // 10초 타임아웃 적용
-    const { data, error } = await withTimeout(query, 10000)
-    console.log('posts 쿼리 결과:', { data, error })
+    const startTime = Date.now()
+    const { data, error } = await query
+    const endTime = Date.now()
+
+    console.log(`posts 쿼리 완료 (${endTime - startTime}ms):`, { data, error, dataLength: data?.length })
 
     if (error) {
       console.error('게시글 목록 조회 실패:', error)
@@ -45,48 +48,86 @@ export async function getPosts(options = {}) {
       return []
     }
 
-    // 작성자 닉네임 가져오기
-    const userIds = [...new Set(data.map(post => post.user_id))]
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, nickname')
-      .in('id', userIds)
+    // 작성자 정보는 별도로 가져오기 (실패해도 게시글은 표시)
+    try {
+      const userIds = [...new Set(data.map(post => post.user_id))]
+      console.log('프로필 조회 시작, userIds:', userIds)
 
-    const profileMap = {}
-    if (profiles) {
-      profiles.forEach(p => { profileMap[p.id] = p.nickname })
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, nickname')
+        .in('id', userIds)
+
+      console.log('프로필 조회 결과:', { profiles, profileError })
+
+      const profileMap = {}
+      if (profiles && !profileError) {
+        profiles.forEach(p => { profileMap[p.id] = p.nickname })
+      }
+
+      return data.map(post => ({
+        ...post,
+        author_nickname: profileMap[post.user_id] || '익명'
+      }))
+    } catch (profileErr) {
+      console.error('프로필 조회 에러 (무시하고 진행):', profileErr)
+      // 프로필 조회 실패해도 게시글은 표시
+      return data.map(post => ({
+        ...post,
+        author_nickname: '익명'
+      }))
     }
-
-    return data.map(post => ({
-      ...post,
-      author_nickname: profileMap[post.user_id] || '익명'
-    }))
   } catch (err) {
     console.error('getPosts 에러:', err.message || err)
-    throw err  // 에러를 던져서 UI에서 에러 상태 표시
+    throw err
   }
 }
 
 // 게시글 상세 조회
 export async function getPost(postId) {
+  console.log('getPost 시작, postId:', postId)
+
+  // 먼저 posts만 가져오기 (JOIN 없이)
   const { data, error } = await supabase
     .from('posts')
-    .select(`
-      *,
-      profiles:user_id (nickname, email)
-    `)
+    .select('*')
     .eq('id', postId)
     .single()
+
+  console.log('posts 조회 결과:', { data, error })
 
   if (error) {
     console.error('게시글 조회 실패:', error)
     throw error
   }
 
-  return {
-    ...data,
-    author_nickname: data.profiles?.nickname || '익명',
-    author_email: data.profiles?.email
+  if (!data) {
+    throw new Error('게시글을 찾을 수 없습니다')
+  }
+
+  // 작성자 정보는 별도로 가져오기 (실패해도 게시글은 표시)
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, nickname, email')
+      .eq('id', data.user_id)
+      .single()
+
+    console.log('프로필 조회 결과:', { profile, profileError })
+
+    return {
+      ...data,
+      author_nickname: profile?.nickname || '익명',
+      author_email: profile?.email
+    }
+  } catch (profileErr) {
+    console.error('프로필 조회 에러 (무시하고 진행):', profileErr)
+    // 프로필 조회 실패해도 게시글은 표시
+    return {
+      ...data,
+      author_nickname: '익명',
+      author_email: null
+    }
   }
 }
 
@@ -114,6 +155,7 @@ export async function createPost({ title, content, type, imageUrl }) {
     .from('posts')
     .insert(postData)
     .select()
+    .single()
 
   console.log('insert 결과:', data, error)
 
@@ -122,7 +164,7 @@ export async function createPost({ title, content, type, imageUrl }) {
     throw error
   }
 
-  return data?.[0] || data
+  return data
 }
 
 // 게시글 수정
@@ -169,56 +211,113 @@ export async function deletePost(postId) {
 
 // 댓글 목록 조회
 export async function getComments(postId) {
+  console.log('getComments 시작, postId:', postId)
+
+  // 먼저 comments만 가져오기 (JOIN 없이)
   const { data, error } = await supabase
     .from('comments')
-    .select(`
-      *,
-      profiles:user_id (nickname, email)
-    `)
+    .select('*')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
+
+  console.log('comments 조회 결과:', { data, error })
 
   if (error) {
     console.error('댓글 조회 실패:', error)
     throw error
   }
 
-  return data.map(comment => ({
-    ...comment,
-    author_nickname: comment.profiles?.nickname || '익명',
-    author_email: comment.profiles?.email
-  }))
+  if (!data || data.length === 0) {
+    return []
+  }
+
+  // 작성자 정보는 별도로 가져오기 (실패해도 댓글은 표시)
+  try {
+    const userIds = [...new Set(data.map(comment => comment.user_id))]
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, nickname, email')
+      .in('id', userIds)
+
+    console.log('프로필 조회 결과:', { profiles, profileError })
+
+    const profileMap = {}
+    if (profiles && !profileError) {
+      profiles.forEach(p => {
+        profileMap[p.id] = { nickname: p.nickname, email: p.email }
+      })
+    }
+
+    return data.map(comment => ({
+      ...comment,
+      author_nickname: profileMap[comment.user_id]?.nickname || '익명',
+      author_email: profileMap[comment.user_id]?.email
+    }))
+  } catch (profileErr) {
+    console.error('프로필 조회 에러 (무시하고 진행):', profileErr)
+    // 프로필 조회 실패해도 댓글은 표시
+    return data.map(comment => ({
+      ...comment,
+      author_nickname: '익명',
+      author_email: null
+    }))
+  }
 }
 
 // 댓글 작성
 export async function createComment(postId, content) {
-  const { data: { user } } = await supabase.auth.getUser()
+  console.log('createComment 시작')
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  console.log('현재 사용자:', user, userError)
 
   if (!user) {
     throw new Error('로그인이 필요합니다')
   }
 
+  const commentData = {
+    post_id: postId,
+    user_id: user.id,
+    content
+  }
+  console.log('저장할 댓글:', commentData)
+
   const { data, error } = await supabase
     .from('comments')
-    .insert({
-      post_id: postId,
-      user_id: user.id,
-      content
-    })
-    .select(`
-      *,
-      profiles:user_id (nickname, email)
-    `)
+    .insert(commentData)
+    .select()
     .single()
+
+  console.log('insert 결과:', data, error)
 
   if (error) {
     console.error('댓글 작성 실패:', error)
     throw error
   }
 
-  return {
-    ...data,
-    author_nickname: data.profiles?.nickname || '익명'
+  // 작성자 정보는 별도로 가져오기 (실패해도 댓글은 표시)
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, nickname, email')
+      .eq('id', user.id)
+      .single()
+
+    console.log('프로필 조회 결과:', { profile, profileError })
+
+    return {
+      ...data,
+      author_nickname: profile?.nickname || '익명',
+      author_email: profile?.email
+    }
+  } catch (profileErr) {
+    console.error('프로필 조회 에러 (무시하고 진행):', profileErr)
+    // 프로필 조회 실패해도 댓글은 표시
+    return {
+      ...data,
+      author_nickname: '익명',
+      author_email: null
+    }
   }
 }
 

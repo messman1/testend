@@ -176,7 +176,7 @@ function Meeting() {
                   {meeting.placeUrl && (
                     <button
                       className="action-btn"
-                      onClick={() => window.open(meeting.placeUrl, '_blank')}
+                      onClick={() => navigate(`/place?url=${encodeURIComponent(meeting.placeUrl)}&name=${encodeURIComponent(meeting.place)}`)}
                     >
                       📍 장소 보기
                     </button>
@@ -301,7 +301,7 @@ function Meeting() {
               <button
                 type="button"
                 className="search-place-btn"
-                onClick={() => navigate('/explore')}
+                onClick={() => navigate('/explore', { state: { fromMeeting: true } })}
               >
                 🔍 장소 검색하기
               </button>

@@ -1,10 +1,39 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useMeetings } from '../context/MeetingContext'
+import { useBookmarks } from '../context/BookmarkContext'
+import { supabase } from '../services/supabase'
 import './Profile.css'
 
 function Profile() {
   const navigate = useNavigate()
   const { user, profile, isAuthenticated, signOut, loading } = useAuth()
+  const { meetings } = useMeetings()
+  const { bookmarkedPlaces } = useBookmarks()
+  const [myPostsCount, setMyPostsCount] = useState(0)
+
+  // 내가 작성한 게시글 수 조회
+  useEffect(() => {
+    async function fetchMyPostsCount() {
+      if (!user) return
+
+      try {
+        const { count, error } = await supabase
+          .from('posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+
+        if (!error && count !== null) {
+          setMyPostsCount(count)
+        }
+      } catch (err) {
+        console.error('게시글 수 조회 실패:', err)
+      }
+    }
+
+    fetchMyPostsCount()
+  }, [user])
 
   // 로그아웃 처리
   const handleLogout = async () => {
@@ -68,9 +97,9 @@ function Profile() {
   }
 
   const stats = [
-    { label: '다녀온 장소', value: 0, icon: '📍' },
-    { label: '참여한 모임', value: 0, icon: '👥' },
-    { label: '작성한 후기', value: 0, icon: '✏️' }
+    { label: '찜한 장소', value: bookmarkedPlaces.length, icon: '🔖' },
+    { label: '참여한 모임', value: meetings.length, icon: '👥' },
+    { label: '작성한 글', value: myPostsCount, icon: '✏️' }
   ]
 
   return (
@@ -120,17 +149,17 @@ function Profile() {
       </div>
 
       <div className="menu-section">
-        <button className="menu-item">
+        <button className="menu-item" onClick={() => navigate('/bookmarked')}>
           <span>📋</span>
           <span>찜한 장소</span>
           <span className="arrow">›</span>
         </button>
-        <button className="menu-item">
+        <button className="menu-item" onClick={() => navigate('/friends')}>
           <span>👥</span>
           <span>친구 관리</span>
           <span className="arrow">›</span>
         </button>
-        <button className="menu-item">
+        <button className="menu-item" onClick={() => navigate('/settings')}>
           <span>⚙️</span>
           <span>설정</span>
           <span className="arrow">›</span>

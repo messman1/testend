@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation as useRouterLocation } from 'react-router-dom'
 import { searchByCategory, getAllPlaces } from '../services/kakaoApi'
 import { useLocation } from '../context/LocationContext'
+import { useBookmarks } from '../context/BookmarkContext'
 import './Explore.css'
 
 function Explore() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const routerLocation = useRouterLocation()
   const category = searchParams.get('category')
+  const fromMeeting = routerLocation.state?.fromMeeting
   const { longitude, latitude, address, loading: locationLoading, refreshLocation } = useLocation()
+  const { toggleBookmark, isBookmarked } = useBookmarks()
   const [searchTerm, setSearchTerm] = useState('')
   const [places, setPlaces] = useState([])
   const [loading, setLoading] = useState(true)
@@ -66,8 +70,35 @@ function Explore() {
       )
     : places
 
+  // 장소 선택 핸들러
+  const handlePlaceClick = (place) => {
+    if (fromMeeting) {
+      // 모임 만들기에서 온 경우 - 장소 정보를 전달하며 모임 만들기로 돌아감
+      navigate('/meeting/create', {
+        state: {
+          place: {
+            name: place.name,
+            address: place.address,
+            url: place.url
+          }
+        }
+      })
+    } else {
+      // 일반 탐색인 경우 - 장소 상세 페이지로 이동
+      navigate(`/place?url=${encodeURIComponent(place.url)}&name=${encodeURIComponent(place.name)}`)
+    }
+  }
+
   return (
     <div className="page explore-page">
+      {fromMeeting && (
+        <div className="form-header">
+          <button className="back-btn" onClick={() => navigate('/meeting/create')}>
+            ← 뒤로
+          </button>
+          <h2>장소 선택</h2>
+        </div>
+      )}
       <div className="search-section">
         <div className="search-bar">
           <span className="search-icon">🔍</span>
@@ -128,7 +159,7 @@ function Explore() {
               <div
                 key={place.id}
                 className="place-card"
-                onClick={() => navigate(`/place?url=${encodeURIComponent(place.url)}&name=${encodeURIComponent(place.name)}`)}
+                onClick={() => handlePlaceClick(place)}
               >
                 <div className="place-image">
                   {place.thumbnail ? (
@@ -154,10 +185,16 @@ function Explore() {
                     <span>🚶 {place.distance}</span>
                   </div>
                 </div>
-                <button className="bookmark-btn" onClick={(e) => {
-                  e.stopPropagation()
-                  // 북마크 기능 추가 예정
-                }}>🔖</button>
+                <button
+                  className={`bookmark-btn ${isBookmarked(place.id) ? 'bookmarked' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleBookmark(place)
+                  }}
+                  title={isBookmarked(place.id) ? '찜 해제' : '찜하기'}
+                >
+                  {isBookmarked(place.id) ? '⭐' : '🔖'}
+                </button>
               </div>
             ))
           )}

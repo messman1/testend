@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation as useRouterLocatio
 import { MeetingProvider } from './context/MeetingContext'
 import { AuthProvider } from './context/AuthContext'
 import { LocationProvider } from './context/LocationContext'
+import { BookmarkProvider } from './context/BookmarkContext'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
 import Recommend from './pages/Recommend'
@@ -13,6 +14,9 @@ import SignUp from './pages/SignUp'
 import PlaceDetail from './pages/PlaceDetail'
 import WritePost from './pages/WritePost'
 import PostDetail from './pages/PostDetail'
+import BookmarkedPlaces from './pages/BookmarkedPlaces'
+import Friends from './pages/Friends'
+import Settings from './pages/Settings'
 import './App.css'
 
 function Layout({ children }) {
@@ -20,7 +24,7 @@ function Layout({ children }) {
   const navigate = useNavigate()
 
   // 특정 페이지에서는 하단 네비게이션 숨김
-  const hideNavPaths = ['/login', '/signup', '/place', '/community/write']
+  const hideNavPaths = ['/login', '/signup', '/place', '/community/write', '/bookmarked', '/friends', '/settings']
   const hideNav = hideNavPaths.includes(routerLocation.pathname) ||
                   routerLocation.pathname.startsWith('/community/post/')
 
@@ -89,24 +93,29 @@ function App() {
     <Router>
       <LocationProvider>
         <AuthProvider>
-          <MeetingProvider>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/explore" element={<Explore />} />
-                <Route path="/recommend" element={<Recommend />} />
-                <Route path="/meeting" element={<Meeting />} />
-                <Route path="/meeting/create" element={<Meeting />} />
-                <Route path="/community" element={<Community />} />
-                <Route path="/community/write" element={<WritePost />} />
-                <Route path="/community/post/:postId" element={<PostDetail />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/place" element={<PlaceDetail />} />
-              </Routes>
-            </Layout>
-          </MeetingProvider>
+          <BookmarkProvider>
+            <MeetingProvider>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/explore" element={<Explore />} />
+                  <Route path="/recommend" element={<Recommend />} />
+                  <Route path="/meeting" element={<Meeting />} />
+                  <Route path="/meeting/create" element={<Meeting />} />
+                  <Route path="/community" element={<Community />} />
+                  <Route path="/community/write" element={<WritePost />} />
+                  <Route path="/community/post/:postId" element={<PostDetail />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/bookmarked" element={<BookmarkedPlaces />} />
+                  <Route path="/friends" element={<Friends />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/place" element={<PlaceDetail />} />
+                </Routes>
+              </Layout>
+            </MeetingProvider>
+          </BookmarkProvider>
         </AuthProvider>
       </LocationProvider>
     </Router>

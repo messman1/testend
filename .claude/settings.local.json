@@ -29,7 +29,11 @@
       "Bash(dir /s /b \"C:\\Users\\brian\\project\\testend\\teen-community-app\\android\\app\\build\\outputs\")",
       "Bash(dir /s /b \"C:\\Users\\brian\\project\\testend\\teen-community-app\\android\\app\\build\")",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(flutter create:*)",
+      "Bash(dir:*)",
+      "Bash(flutter --version:*)",
+      "Bash(C:/Users/ehchoi/flutter/bin/flutter.bat:*)"
     ]
   }
 }

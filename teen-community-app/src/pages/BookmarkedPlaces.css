@@ -1,0 +1,192 @@
+.bookmarked-places-page {
+  padding-bottom: 80px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #FFF8F0;
+  border-bottom: 1px solid #F4D3B8;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #8B5A2B;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: #8B5A2B;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.back-btn:hover {
+  background: #F4D3B8;
+}
+
+.bookmarked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.bookmarked-card {
+  display: flex;
+  gap: 12px;
+  background: white;
+  border: 1px solid #F4D3B8;
+  border-radius: 16px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.bookmarked-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 90, 43, 0.1);
+}
+
+.bookmarked-card .place-image {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #FFF8F0;
+  position: relative;
+}
+
+.bookmarked-card .place-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bookmarked-card .place-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.bookmarked-card .place-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bookmarked-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #8B5A2B;
+  font-weight: 600;
+}
+
+.bookmarked-card .place-location {
+  font-size: 0.85rem;
+  color: #F4A460;
+  margin: 0;
+  font-weight: 500;
+}
+
+.bookmarked-card .place-address {
+  font-size: 0.8rem;
+  color: #999;
+  margin: 0;
+}
+
+.bookmarked-card .place-phone {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+}
+
+.bookmarked-card .bookmarked-date {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: white;
+  border: 1px solid #F4D3B8;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.remove-btn:hover {
+  background: #FFF0E0;
+  border-color: #F4A460;
+  transform: scale(1.1);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.empty-state p {
+  color: #8B5A2B;
+  margin: 8px 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.empty-description {
+  color: #999 !important;
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+}
+
+.go-explore-btn {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #F4A460 0%, #DEB887 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.go-explore-btn:hover {
+  transform: translateY(-2px);
+}
