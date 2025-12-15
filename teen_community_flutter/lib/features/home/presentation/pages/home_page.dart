@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/routes/route_names.dart';
+import '../../../location/providers/location_provider.dart';
 
 /// 홈 페이지
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final locationState = ref.watch(currentLocationProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -27,8 +30,8 @@ class HomePage extends StatelessWidget {
           _buildCategoriesSection(context, theme),
           const SizedBox(height: 32),
 
-          // 인기 장소 (추후 구현)
-          _buildPopularPlaces(theme),
+          // 인기 장소
+          _buildPopularPlaces(ref, theme, locationState),
         ],
       ),
     );
@@ -189,8 +192,12 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  /// 인기 장소 (추후 구현)
-  Widget _buildPopularPlaces(ThemeData theme) {
+  /// 인기 장소
+  Widget _buildPopularPlaces(
+    WidgetRef ref,
+    ThemeData theme,
+    LocationState locationState,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -198,44 +205,171 @@ class HomePage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             children: [
-              Text(
-                '📍 내 주변 인기 장소',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  '📍 ${locationState.address ?? "내 주변"} 인기 장소',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const Spacer(),
               IconButton(
-                icon: const Text('🔄', style: TextStyle(fontSize: 20)),
-                onPressed: () {
-                  // 위치 새로고침 (추후 구현)
-                },
+                icon: locationState.isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('🔄', style: TextStyle(fontSize: 20)),
+                onPressed: locationState.isLoading
+                    ? null
+                    : () {
+                        ref
+                            .read(locationControllerProvider.notifier)
+                            .refreshLocation();
+                      },
                 tooltip: '위치 새로고침',
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Center(
-              child: Column(
+        const SizedBox(height: 8),
+
+        // 위치 오류 표시
+        if (locationState.error != null)
+          Card(
+            color: Colors.orange.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
                 children: [
-                  Text(
-                    '🏪',
-                    style: theme.textTheme.headlineLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '위치 서비스 구현 예정',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  const Text('⚠️', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '위치 정보를 가져올 수 없습니다.\n기본 위치(서울)로 표시됩니다.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.orange.shade900,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+
+        const SizedBox(height: 12),
+
+        // 위치 정보 카드
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('📍', style: TextStyle(fontSize: 24)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '현재 위치',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            locationState.address ?? '위치 정보 없음',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (locationState.hasLocation) ...[
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildLocationInfo(
+                          theme,
+                          '위도',
+                          locationState.latitude?.toStringAsFixed(4) ?? '-',
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildLocationInfo(
+                          theme,
+                          '경도',
+                          locationState.longitude?.toStringAsFixed(4) ?? '-',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        '🏪',
+                        style: theme.textTheme.headlineLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '인기 장소 목록은 카카오 API 연동 후 표시됩니다',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 위치 정보 표시 위젯
+  Widget _buildLocationInfo(ThemeData theme, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontFamily: 'monospace',
           ),
         ),
       ],
