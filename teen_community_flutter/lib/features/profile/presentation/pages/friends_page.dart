@@ -168,9 +168,11 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
               final users = await friendsController.searchUsers(nickname);
 
               if (!mounted) return;
+              if (!dialogContext.mounted) return;
               Navigator.of(dialogContext).pop();
 
               if (users.isEmpty) {
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('사용자를 찾을 수 없습니다')),
                 );
@@ -223,9 +225,11 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
 
               final state = ref.read(friendsControllerProvider);
               if (!mounted) return;
+              if (!dialogContext.mounted) return;
 
               Navigator.of(dialogContext).pop();
 
+              if (!mounted) return;
               state.when(
                 data: (_) {
                   ScaffoldMessenger.of(context).showSnackBar(

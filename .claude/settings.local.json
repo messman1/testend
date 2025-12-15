@@ -33,7 +33,8 @@
       "Bash(flutter create:*)",
       "Bash(dir:*)",
       "Bash(flutter --version:*)",
-      "Bash(C:/Users/ehchoi/flutter/bin/flutter.bat:*)"
+      "Bash(C:/Users/ehchoi/flutter/bin/flutter.bat:*)",
+      "Bash(flutter analyze:*)"
     ]
   }
 }

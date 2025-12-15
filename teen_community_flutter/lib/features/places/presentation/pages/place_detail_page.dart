@@ -125,7 +125,7 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
           if (kIsWeb)
             HtmlElementView(viewType: _iframeId)
           else if (_controller != null)
-            WebViewWidget(controller: _controller!),
+            WebViewWidget(controller: _controller),
 
           // 로딩 인디케이터
           if (_isLoading)
