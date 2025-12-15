@@ -3,76 +3,96 @@ import 'package:go_router/go_router.dart';
 import 'route_names.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/common/presentation/widgets/app_scaffold.dart';
 
 /// 앱 라우터 설정 (GoRouter)
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: RouteNames.home,
     routes: [
-      // 홈
-      GoRoute(
-        path: RouteNames.home,
-        builder: (context, state) => const PlaceholderScreen(title: '홈'),
-      ),
-
-      // 탐색
-      GoRoute(
-        path: RouteNames.explore,
-        builder: (context, state) => const PlaceholderScreen(title: '탐색'),
-      ),
-
-      // 추천
-      GoRoute(
-        path: RouteNames.recommend,
-        builder: (context, state) => const PlaceholderScreen(title: '추천'),
-      ),
-
-      // 모임
-      GoRoute(
-        path: RouteNames.meeting,
-        builder: (context, state) => const PlaceholderScreen(title: '모임'),
-      ),
-      GoRoute(
-        path: RouteNames.meetingCreate,
-        builder: (context, state) => const PlaceholderScreen(title: '모임 만들기'),
-      ),
-
-      // 커뮤니티
-      GoRoute(
-        path: RouteNames.community,
-        builder: (context, state) => const PlaceholderScreen(title: '소식'),
-      ),
-      GoRoute(
-        path: RouteNames.communityWrite,
-        builder: (context, state) => const PlaceholderScreen(title: '글쓰기'),
-      ),
-      GoRoute(
-        path: RouteNames.postDetail,
-        builder: (context, state) {
-          final postId = state.pathParameters['postId'] ?? '';
-          return PlaceholderScreen(title: '게시글 상세 ($postId)');
+      // 메인 레이아웃 (하단 네비게이션 포함)
+      ShellRoute(
+        builder: (context, state, child) {
+          return AppScaffold(
+            currentPath: state.uri.path,
+            child: child,
+          );
         },
+        routes: [
+          // 홈
+          GoRoute(
+            path: RouteNames.home,
+            builder: (context, state) => const HomePage(),
+          ),
+
+          // 탐색
+          GoRoute(
+            path: RouteNames.explore,
+            builder: (context, state) => const PlaceholderScreen(title: '탐색'),
+          ),
+
+          // 추천
+          GoRoute(
+            path: RouteNames.recommend,
+            builder: (context, state) => const PlaceholderScreen(title: '추천'),
+          ),
+
+          // 모임
+          GoRoute(
+            path: RouteNames.meeting,
+            builder: (context, state) => const PlaceholderScreen(title: '모임'),
+          ),
+          GoRoute(
+            path: RouteNames.meetingCreate,
+            builder: (context, state) => const PlaceholderScreen(title: '모임 만들기'),
+          ),
+
+          // 커뮤니티
+          GoRoute(
+            path: RouteNames.community,
+            builder: (context, state) => const PlaceholderScreen(title: '소식'),
+          ),
+          GoRoute(
+            path: RouteNames.communityWrite,
+            builder: (context, state) => const PlaceholderScreen(title: '글쓰기'),
+          ),
+          GoRoute(
+            path: RouteNames.postDetail,
+            builder: (context, state) {
+              final postId = state.pathParameters['postId'] ?? '';
+              return PlaceholderScreen(title: '게시글 상세 ($postId)');
+            },
+          ),
+
+          // 프로필
+          GoRoute(
+            path: RouteNames.profile,
+            builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: RouteNames.bookmarked,
+            builder: (context, state) => const PlaceholderScreen(title: '북마크'),
+          ),
+          GoRoute(
+            path: RouteNames.friends,
+            builder: (context, state) => const PlaceholderScreen(title: '친구'),
+          ),
+          GoRoute(
+            path: RouteNames.settings,
+            builder: (context, state) => const PlaceholderScreen(title: '설정'),
+          ),
+
+          // 장소 상세
+          GoRoute(
+            path: RouteNames.placeDetail,
+            builder: (context, state) => const PlaceholderScreen(title: '장소 상세'),
+          ),
+        ],
       ),
 
-      // 프로필
-      GoRoute(
-        path: RouteNames.profile,
-        builder: (context, state) => const PlaceholderScreen(title: '프로필'),
-      ),
-      GoRoute(
-        path: RouteNames.bookmarked,
-        builder: (context, state) => const PlaceholderScreen(title: '북마크'),
-      ),
-      GoRoute(
-        path: RouteNames.friends,
-        builder: (context, state) => const PlaceholderScreen(title: '친구'),
-      ),
-      GoRoute(
-        path: RouteNames.settings,
-        builder: (context, state) => const PlaceholderScreen(title: '설정'),
-      ),
-
-      // 인증
+      // 인증 (ShellRoute 밖 - 하단 네비게이션 없음)
       GoRoute(
         path: RouteNames.login,
         builder: (context, state) => const LoginPage(),
@@ -80,12 +100,6 @@ class AppRouter {
       GoRoute(
         path: RouteNames.signup,
         builder: (context, state) => const SignUpPage(),
-      ),
-
-      // 장소 상세
-      GoRoute(
-        path: RouteNames.placeDetail,
-        builder: (context, state) => const PlaceholderScreen(title: '장소 상세'),
       ),
     ],
     errorBuilder: (context, state) => const PlaceholderScreen(title: '404 - 페이지를 찾을 수 없습니다'),
