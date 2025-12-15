@@ -3,39 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../places/domain/models/place_model.dart';
 import '../../../../config/routes/route_names.dart';
+import '../../providers/bookmarks_provider.dart';
 
 /// 북마크한 장소 페이지
-class BookmarkedPage extends ConsumerStatefulWidget {
+class BookmarkedPage extends ConsumerWidget {
   const BookmarkedPage({super.key});
 
   @override
-  ConsumerState<BookmarkedPage> createState() => _BookmarkedPageState();
-}
-
-class _BookmarkedPageState extends ConsumerState<BookmarkedPage> {
-  final List<PlaceModel> _bookmarkedPlaces = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBookmarks();
-  }
-
-  void _loadBookmarks() {
-    // TODO: Supabase에서 북마크 목록 로드
-    // 현재는 빈 상태
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final bookmarksAsync = ref.watch(bookmarkedPlacesProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('북마크'),
       ),
-      body: _bookmarkedPlaces.isEmpty
-          ? Center(
+      body: bookmarksAsync.when(
+        data: (places) {
+          if (places.isEmpty) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -56,21 +42,40 @@ class _BookmarkedPageState extends ConsumerState<BookmarkedPage> {
                   ),
                 ],
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _bookmarkedPlaces.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final place = _bookmarkedPlaces[index];
-                return _buildPlaceCard(theme, place);
-              },
-            ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: places.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _buildPlaceCard(context, ref, theme, places[index]);
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('⚠️', style: theme.textTheme.displayLarge),
+              const SizedBox(height: 16),
+              Text(
+                '북마크 목록을 불러오는데 실패했습니다',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   /// 장소 카드
-  Widget _buildPlaceCard(ThemeData theme, PlaceModel place) {
+  Widget _buildPlaceCard(BuildContext context, WidgetRef ref, ThemeData theme, PlaceModel place) {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -164,13 +169,26 @@ class _BookmarkedPageState extends ConsumerState<BookmarkedPage> {
               IconButton(
                 icon: const Icon(Icons.bookmark),
                 color: theme.colorScheme.primary,
-                onPressed: () {
-                  setState(() {
-                    _bookmarkedPlaces.remove(place);
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('북마크가 해제되었습니다')),
-                  );
+                onPressed: () async {
+                  final controller = ref.read(bookmarksControllerProvider.notifier);
+                  await controller.removeBookmark(place.url);
+
+                  final state = ref.read(bookmarksControllerProvider);
+                  if (context.mounted) {
+                    state.when(
+                      data: (_) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('북마크가 해제되었습니다')),
+                        );
+                      },
+                      loading: () {},
+                      error: (error, _) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('오류: ${error.toString()}')),
+                        );
+                      },
+                    );
+                  }
                 },
               ),
             ],

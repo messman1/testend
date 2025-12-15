@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/friends_repository.dart';
+import '../../providers/friends_provider.dart';
 
 /// 친구 목록 페이지
 class FriendsPage extends ConsumerStatefulWidget {
@@ -10,38 +12,10 @@ class FriendsPage extends ConsumerStatefulWidget {
 }
 
 class _FriendsPageState extends ConsumerState<FriendsPage> {
-  final List<FriendModel> _friends = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFriends();
-  }
-
-  void _loadFriends() {
-    // TODO: Supabase에서 친구 목록 로드
-    // 샘플 데이터
-    setState(() {
-      _friends.addAll(const [
-        FriendModel(
-          id: '1',
-          nickname: '친구1',
-          level: 5,
-          isOnline: true,
-        ),
-        FriendModel(
-          id: '2',
-          nickname: '친구2',
-          level: 3,
-          isOnline: false,
-        ),
-      ]);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final friendsAsync = ref.watch(friendsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -56,8 +30,10 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
           ),
         ],
       ),
-      body: _friends.isEmpty
-          ? Center(
+      body: friendsAsync.when(
+        data: (friends) {
+          if (friends.isEmpty) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -78,52 +54,50 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
                   ),
                 ],
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _friends.length,
-              separatorBuilder: (context, index) => const Divider(),
-              itemBuilder: (context, index) {
-                final friend = _friends[index];
-                return _buildFriendItem(theme, friend);
-              },
-            ),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: friends.length,
+            separatorBuilder: (context, index) => const Divider(),
+            itemBuilder: (context, index) {
+              return _buildFriendItem(theme, friends[index]);
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('⚠️', style: theme.textTheme.displayLarge),
+              const SizedBox(height: 16),
+              Text(
+                '친구 목록을 불러오는데 실패했습니다',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   /// 친구 아이템
   Widget _buildFriendItem(ThemeData theme, FriendModel friend) {
     return ListTile(
-      leading: Stack(
-        children: [
-          CircleAvatar(
-            backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-            child: Text(
-              friend.nickname[0],
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+        child: Text(
+          friend.nickname[0],
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
           ),
-          if (friend.isOnline)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: theme.colorScheme.surface,
-                    width: 2,
-                  ),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
       title: Text(
         friend.nickname,
@@ -170,7 +144,7 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('친구 추가'),
         content: TextField(
           controller: controller,
@@ -181,18 +155,47 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                // TODO: 친구 추가 API 호출
-                Navigator.of(context).pop();
+            onPressed: () async {
+              final nickname = controller.text.trim();
+              if (nickname.isEmpty) return;
+
+              // 사용자 검색
+              final friendsController = ref.read(friendsControllerProvider.notifier);
+              final users = await friendsController.searchUsers(nickname);
+
+              if (!mounted) return;
+              Navigator.of(dialogContext).pop();
+
+              if (users.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('친구 요청을 보냈습니다')),
+                  const SnackBar(content: Text('사용자를 찾을 수 없습니다')),
                 );
+                return;
               }
+
+              final user = users.first;
+              await friendsController.sendFriendRequest(user.id);
+
+              final state = ref.read(friendsControllerProvider);
+              if (!mounted) return;
+
+              state.when(
+                data: (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('친구 요청을 보냈습니다')),
+                  );
+                },
+                loading: () {},
+                error: (error, _) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('오류: ${error.toString()}')),
+                  );
+                },
+              );
             },
             child: const Text('추가'),
           ),
@@ -205,22 +208,36 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
   void _removeFriend(FriendModel friend) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('친구 삭제'),
         content: Text('${friend.nickname}님을 친구 목록에서 삭제하시겠습니까?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () {
-              setState(() {
-                _friends.remove(friend);
-              });
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('친구가 삭제되었습니다')),
+            onPressed: () async {
+              final controller = ref.read(friendsControllerProvider.notifier);
+              await controller.removeFriend(friend.id);
+
+              final state = ref.read(friendsControllerProvider);
+              if (!mounted) return;
+
+              Navigator.of(dialogContext).pop();
+
+              state.when(
+                data: (_) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('친구가 삭제되었습니다')),
+                  );
+                },
+                loading: () {},
+                error: (error, _) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('오류: ${error.toString()}')),
+                  );
+                },
               );
             },
             child: const Text('삭제'),
@@ -229,19 +246,4 @@ class _FriendsPageState extends ConsumerState<FriendsPage> {
       ),
     );
   }
-}
-
-/// 친구 모델
-class FriendModel {
-  final String id;
-  final String nickname;
-  final int level;
-  final bool isOnline;
-
-  const FriendModel({
-    required this.id,
-    required this.nickname,
-    required this.level,
-    required this.isOnline,
-  });
 }

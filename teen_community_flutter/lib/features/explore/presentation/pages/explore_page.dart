@@ -279,126 +279,155 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
   Widget _buildPlaceCard(ThemeData theme, PlaceModel place) {
     return Card(
       clipBehavior: Clip.antiAlias,
+      elevation: 2,
       child: InkWell(
         onTap: () {
           context.push(
             '${RouteNames.placeDetail}?url=${Uri.encodeComponent(place.url)}&name=${Uri.encodeComponent(place.name)}',
           );
         },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 아이콘/이미지
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    place.category.icon,
-                    style: const TextStyle(fontSize: 40),
-                  ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 이미지 영역 (카테고리 아이콘을 큰 배너로)
+            Container(
+              width: double.infinity,
+              height: 140,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
+                    theme.colorScheme.secondary.withValues(alpha: 0.2),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-
-              // 정보
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 장소명
-                    Text(
-                      place.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              child: Stack(
+                children: [
+                  Center(
+                    child: Text(
+                      place.category.icon,
+                      style: const TextStyle(fontSize: 80),
                     ),
-                    const SizedBox(height: 4),
+                  ),
+                  // 카테고리 라벨
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        place.category.label,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-                    // 위치
-                    Row(
-                      children: [
-                        const Text('📍', style: TextStyle(fontSize: 12)),
-                        const SizedBox(width: 4),
-                        Text(
+            // 정보 영역
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 장소명
+                  Text(
+                    place.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 위치
+                  Row(
+                    children: [
+                      const Text('📍', style: TextStyle(fontSize: 12)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
                           place.location,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.7),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-
-                    // 주소
-                    Text(
-                      place.address,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
 
-                    // 전화번호
-                    if (place.phone.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Text('📞', style: TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Text(
+                  // 주소
+                  Text(
+                    place.address,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 거리 및 전화번호
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '🚶 ${place.distance}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (place.phone.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        const Text('📞', style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
                             place.phone,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface
                                   .withValues(alpha: 0.6),
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                    ],
-
-                    const SizedBox(height: 8),
-
-                    // 거리
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '🚶 ${place.distance}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
+                      ],
+                    ],
+                  ),
+                ],
               ),
-
-              // 화살표
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

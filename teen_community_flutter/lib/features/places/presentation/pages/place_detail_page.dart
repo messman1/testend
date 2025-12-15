@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:ui' as ui;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
-/// 장소 상세 페이지 (카카오맵 WebView)
+/// 장소 상세 페이지 (카카오맵 WebView/IFrame)
 class PlaceDetailPage extends StatefulWidget {
   final String url;
   final String name;
@@ -18,13 +22,40 @@ class PlaceDetailPage extends StatefulWidget {
 }
 
 class _PlaceDetailPageState extends State<PlaceDetailPage> {
-  late final WebViewController _controller;
+  late final WebViewController? _controller;
   bool _isLoading = true;
+  final String _iframeId = 'kakao-map-iframe';
 
   @override
   void initState() {
     super.initState();
-    _initWebView();
+    if (kIsWeb) {
+      _initWebIframe();
+    } else {
+      _initWebView();
+    }
+  }
+
+  void _initWebIframe() {
+    // 웹용 iframe 초기화
+    // ignore: undefined_prefixed_name
+    ui.platformViewRegistry.registerViewFactory(
+      _iframeId,
+      (int viewId) => html.IFrameElement()
+        ..src = widget.url
+        ..style.border = 'none'
+        ..style.height = '100%'
+        ..style.width = '100%',
+    );
+
+    // 로딩 완료로 설정
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    });
   }
 
   void _initWebView() {
@@ -34,17 +65,20 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
-            setState(() {
-              _isLoading = true;
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = true;
+              });
+            }
           },
           onPageFinished: (String url) {
-            setState(() {
-              _isLoading = false;
-            });
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
           },
           onWebResourceError: (WebResourceError error) {
-            // 에러 처리
             debugPrint('WebView error: ${error.description}');
           },
         ),
@@ -87,8 +121,11 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
       ),
       body: Stack(
         children: [
-          // WebView
-          WebViewWidget(controller: _controller),
+          // 플랫폼별 WebView/IFrame
+          if (kIsWeb)
+            HtmlElementView(viewType: _iframeId)
+          else if (_controller != null)
+            WebViewWidget(controller: _controller!),
 
           // 로딩 인디케이터
           if (_isLoading)

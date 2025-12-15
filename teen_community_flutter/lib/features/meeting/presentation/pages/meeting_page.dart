@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 import '../../domain/models/meeting_model.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../providers/meetings_provider.dart';
 
 /// 모임 목록 페이지
 class MeetingPage extends ConsumerStatefulWidget {
@@ -13,7 +13,6 @@ class MeetingPage extends ConsumerStatefulWidget {
 }
 
 class _MeetingPageState extends ConsumerState<MeetingPage> {
-  final List<MeetingModel> _meetings = [];
   bool _isCreating = false;
   String _selectedCategory = 'all';
 
@@ -66,28 +65,35 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
       return;
     }
 
-    final meeting = MeetingModel(
-      id: const Uuid().v4(),
+    final controller = ref.read(meetingsControllerProvider.notifier);
+    await controller.createMeeting(
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       category: _category,
       location: _locationController.text.trim(),
       meetingDate: _meetingDate,
       maxParticipants: _maxParticipants,
-      participants: [user.id],
-      creatorId: user.id,
       creatorNickname: user.nickname,
-      createdAt: DateTime.now(),
     );
 
-    setState(() {
-      _meetings.insert(0, meeting);
-      _toggleCreateMode();
-    });
-
+    final state = ref.read(meetingsControllerProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('모임이 생성되었습니다')),
+
+    state.when(
+      data: (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('모임이 생성되었습니다')),
+        );
+        setState(() {
+          _toggleCreateMode();
+        });
+      },
+      loading: () {},
+      error: (error, _) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류: ${error.toString()}')),
+        );
+      },
     );
   }
 
@@ -117,16 +123,24 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
       return;
     }
 
-    setState(() {
-      final index = _meetings.indexOf(meeting);
-      _meetings[index] = meeting.copyWith(
-        participants: [...meeting.participants, user.id],
-      );
-    });
+    final controller = ref.read(meetingsControllerProvider.notifier);
+    await controller.joinMeeting(meeting.id);
 
+    final state = ref.read(meetingsControllerProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('모임에 참가했습니다')),
+
+    state.when(
+      data: (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('모임에 참가했습니다')),
+        );
+      },
+      loading: () {},
+      error: (error, _) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('오류: ${error.toString()}')),
+        );
+      },
     );
   }
 
@@ -239,42 +253,66 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
 
   /// 모임 목록
   Widget _buildMeetingList(ThemeData theme) {
-    final filteredMeetings = _selectedCategory == 'all'
-        ? _meetings
-        : _meetings.where((m) => m.category == _selectedCategory).toList();
+    final meetingsAsync = ref.watch(meetingsProvider(_selectedCategory == 'all' ? null : _selectedCategory));
 
-    if (filteredMeetings.isEmpty) {
-      return Center(
+    return meetingsAsync.when(
+      data: (meetings) {
+        if (meetings.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('👥', style: theme.textTheme.displayLarge),
+                const SizedBox(height: 16),
+                Text(
+                  '아직 모임이 없습니다',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '첫 모임을 만들어보세요!',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: meetings.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            return _buildMeetingCard(theme, meetings[index]);
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('👥', style: theme.textTheme.displayLarge),
+            Text('⚠️', style: theme.textTheme.displayLarge),
             const SizedBox(height: 16),
             Text(
-              '아직 모임이 없습니다',
+              '모임 목록을 불러오는데 실패했습니다',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Colors.red,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '첫 모임을 만들어보세요!',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
+              error.toString(),
+              style: theme.textTheme.bodySmall,
+              textAlign: TextAlign.center,
             ),
           ],
         ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredMeetings.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _buildMeetingCard(theme, filteredMeetings[index]);
-      },
+      ),
     );
   }
 
