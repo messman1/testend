@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/routes/route_names.dart';
 import '../../../location/providers/location_provider.dart';
+import '../../../places/providers/places_provider.dart';
+import '../../../places/domain/models/place_model.dart';
 
 /// 홈 페이지
 class HomePage extends ConsumerWidget {
@@ -325,26 +327,36 @@ class HomePage extends ConsumerWidget {
                     ],
                   ),
                 ],
-                const SizedBox(height: 16),
-                Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        '🏪',
-                        style: theme.textTheme.headlineLarge,
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 12),
+
+                // 인기 장소 목록
+                if (locationState.hasLocation)
+                  _buildPlacesList(ref, theme, locationState)
+                else
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            '🏪',
+                            style: theme.textTheme.headlineLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '위치 정보를 가져오는 중...',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '인기 장소 목록은 카카오 API 연동 후 표시됩니다',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color:
-                              theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -373,6 +385,175 @@ class HomePage extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// 인기 장소 목록
+  Widget _buildPlacesList(
+    WidgetRef ref,
+    ThemeData theme,
+    LocationState locationState,
+  ) {
+    final placesAsync = ref.watch(
+      popularPlacesProvider(
+        LocationParams(
+          latitude: locationState.latitude!,
+          longitude: locationState.longitude!,
+          sizePerCategory: 3, // 카테고리당 3개씩
+        ),
+      ),
+    );
+
+    return placesAsync.when(
+      data: (places) {
+        if (places.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Text(
+                '주변에 장소가 없습니다',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          );
+        }
+
+        // 상위 5개만 표시
+        final topPlaces = places.take(5).toList();
+
+        return Column(
+          children: topPlaces.asMap().entries.map((entry) {
+            final index = entry.key;
+            final place = entry.value;
+            return _buildPlaceItem(theme, index + 1, place);
+          }).toList(),
+        );
+      },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: Text(
+            '장소를 불러올 수 없습니다',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.red,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 장소 아이템
+  Widget _buildPlaceItem(ThemeData theme, int rank, PlaceModel place) {
+    return InkWell(
+      onTap: () {
+        // TODO: 장소 상세 페이지로 이동
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            // 순위
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: rank <= 3
+                    ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                    : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  '$rank',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: rank <= 3
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // 아이콘
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(
+                  place.category.icon,
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // 정보
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    place.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        place.location,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      Text(
+                        ' | ',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      Text(
+                        '🚶 ${place.distance}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // 화살표
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
