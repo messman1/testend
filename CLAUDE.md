@@ -259,6 +259,8 @@ CREATE POLICY "Users can delete own likes" ON likes FOR DELETE USING (auth.uid()
 
 ### 2024-12-16 Flutter 마이그레이션 및 Supabase 통합 완료
 
+#### 1차: Flutter 전면 마이그레이션
+
 - **Flutter 앱으로 완전 마이그레이션**
   - React 웹 앱의 모든 기능을 Flutter로 재구현
   - Clean Architecture 패턴 적용 (Data - Domain - Presentation)
@@ -272,20 +274,38 @@ CREATE POLICY "Users can delete own likes" ON likes FOR DELETE USING (auth.uid()
   - 친구 기능: `friends_repository.dart`, `friends_provider.dart`
   - 인증 기능: `auth_repository.dart`, `auth_provider.dart`
 
-- **웹 플랫폼 지원**
-  - 장소 상세 페이지: HtmlElementView를 이용한 iframe 지원 (웹)
-  - WebViewWidget을 이용한 네이티브 WebView 지원 (모바일)
-  - 플랫폼별 조건부 렌더링 (`kIsWeb`)
-
-- **UI/UX 개선**
-  - ExplorePage: 장소 카드에 그라디언트 이미지 배너 추가
-  - Material 3 디자인 시스템 적용
-  - 일관된 에러 처리 및 로딩 상태 표시
-
 - **코드 품질 개선**
   - Flutter analyze 오류 모두 수정
   - BuildContext async gap 경고 해결
   - 불필요한 non-null assertion 제거
+
+#### 2차: 웹 플랫폼 iframe 지원 및 UI 개선
+
+- **웹에서 앱 프레임 내 카카오맵 표시**
+  - `dart:ui_web`의 `platformViewRegistry` 사용
+  - `place_detail_web.dart`: 웹 전용 iframe 등록 함수
+  - `place_detail_stub.dart`: 비웹 플랫폼용 stub
+  - 조건부 import로 플랫폼별 코드 분리
+  - 웹: HtmlElementView + iframe
+  - 모바일: WebViewWidget
+  - **장소 클릭 시 팝업이 아닌 앱 프레임 내에서 카카오맵 표시**
+
+- **장소 썸네일 이미지 표시**
+  - `CachedNetworkImage`로 장소 썸네일 표시
+  - `PlaceModel.thumbnail` 필드 활용
+  - 썸네일 없을 경우 카테고리 아이콘 fallback
+  - 로딩 중 그라디언트 배경 + 로딩 인디케이터
+  - 이미지 로드 실패 시 카테고리 아이콘으로 대체
+
+- **Supabase 인증 개선**
+  - `AuthFlowType.pkce` 명시적 설정
+  - 웹 환경 인증 흐름 최적화
+  - "missing or invalid authentication code" 에러 대응
+
+- **UI/UX 개선**
+  - ExplorePage: 장소 카드에 실제 이미지 또는 그라디언트 배너
+  - Material 3 디자인 시스템 적용
+  - 일관된 에러 처리 및 로딩 상태 표시
 
 ### 2024-12-14 (2차) - React 앱
 - **GPS 기반 위치 서비스 구현**
@@ -341,26 +361,53 @@ CREATE POLICY "Users can delete own likes" ON likes FOR DELETE USING (auth.uid()
 
 ## 다음 단계
 
-### Flutter 앱
+### 우선순위 1: Supabase 데이터베이스 설정 (필수)
 
-- **Supabase 데이터베이스 설정**
+- **데이터베이스 설정**
   - `supabase_schema.sql` 실행하여 테이블 생성
   - RLS 정책 및 RPC 함수 설정
   - 테스트 데이터 입력
+  - **Redirect URLs 설정** (인증 오류 해결):
+    - http://localhost:*
+    - http://127.0.0.1:*
 
-- **기능 개선**
+- **인증 문제 해결**
+  - "missing or invalid authentication code" 에러 디버깅
+  - Supabase Dashboard에서 Email Confirm OFF 확인
+  - 브라우저 Console 로그 확인
+
+### 우선순위 2: 기능 개선
+
+- **이미지 관리**
   - 프로필 이미지 업로드 기능 (Supabase Storage)
-  - 실시간 알림 (Supabase Realtime)
-  - 검색 기능 강화 (전체 검색)
-  - 이미지 업로드 (게시글, 프로필)
+  - 게시글 이미지 업로드
+  - 카카오 Places API 대안 이미지 소스 (Google Places API 또는 직접 관리)
 
-- **배포**
-  - Android APK 빌드 및 배포
-  - iOS 앱 빌드 (추후)
-  - 웹 배포 (Firebase Hosting 또는 Vercel)
+- **실시간 기능**
+  - 실시간 알림 (Supabase Realtime)
+  - 새 게시글/댓글 실시간 업데이트
+
+- **검색 개선**
+  - 전체 검색 기능 (장소 + 게시글 + 사용자)
+  - 검색 히스토리 저장
+
+### 우선순위 3: 배포
+
+- **Android 앱**
+  - APK 빌드 및 테스트
+  - Google Play 배포 준비
+
+- **웹 앱**
+  - Firebase Hosting 또는 Vercel 배포
+  - 프로덕션 환경 변수 설정
+
+- **iOS 앱** (추후)
+  - iOS 빌드 환경 설정
+  - App Store 배포 준비
 
 ### 기술 부채
 
-- 카카오 Places API 이미지 지원 (현재는 카테고리 아이콘만 표시)
-- 오프라인 지원 (로컬 캐싱)
-- 접근성 개선 (Semantics)
+- 오프라인 지원 (Hive를 이용한 로컬 캐싱)
+- 접근성 개선 (Semantics 위젯 추가)
+- 성능 최적화 (이미지 최적화, 리스트 가상화)
+- 테스트 코드 작성 (단위 테스트, 위젯 테스트)
