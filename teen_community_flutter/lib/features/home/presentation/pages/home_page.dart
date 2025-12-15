@@ -451,10 +451,14 @@ class HomePage extends ConsumerWidget {
 
   /// 장소 아이템
   Widget _buildPlaceItem(ThemeData theme, int rank, PlaceModel place) {
-    return InkWell(
-      onTap: () {
-        // TODO: 장소 상세 페이지로 이동
-      },
+    return Builder(
+      builder: (context) => InkWell(
+        onTap: () {
+          // 장소 상세 페이지로 이동
+          context.push(
+            '${RouteNames.placeDetail}?url=${Uri.encodeComponent(place.url)}&name=${Uri.encodeComponent(place.name)}',
+          );
+        },
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
@@ -554,6 +558,6 @@ class HomePage extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }

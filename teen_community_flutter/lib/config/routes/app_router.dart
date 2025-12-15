@@ -5,6 +5,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/places/presentation/pages/place_detail_page.dart';
 import '../../features/common/presentation/widgets/app_scaffold.dart';
 
 /// 앱 라우터 설정 (GoRouter)
@@ -87,7 +88,16 @@ class AppRouter {
           // 장소 상세
           GoRoute(
             path: RouteNames.placeDetail,
-            builder: (context, state) => const PlaceholderScreen(title: '장소 상세'),
+            builder: (context, state) {
+              final url = state.uri.queryParameters['url'] ?? '';
+              final name = state.uri.queryParameters['name'] ?? '장소 상세';
+
+              if (url.isEmpty) {
+                return const PlaceholderScreen(title: '잘못된 접근입니다');
+              }
+
+              return PlaceDetailPage(url: url, name: name);
+            },
           ),
         ],
       ),
