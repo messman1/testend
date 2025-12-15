@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../config/routes/route_names.dart';
 import '../../../location/providers/location_provider.dart';
 import '../../../places/providers/places_provider.dart';
@@ -289,28 +290,72 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 이미지 영역 (카테고리 아이콘을 큰 배너로)
-            Container(
+            // 이미지 영역
+            SizedBox(
               width: double.infinity,
               height: 140,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary.withValues(alpha: 0.1),
-                    theme.colorScheme.secondary.withValues(alpha: 0.2),
-                  ],
-                ),
-              ),
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Center(
-                    child: Text(
-                      place.category.icon,
-                      style: const TextStyle(fontSize: 80),
+                  // 썸네일 이미지 또는 카테고리 아이콘
+                  if (place.thumbnail != null && place.thumbnail!.isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: place.thumbnail!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primary.withValues(alpha: 0.1),
+                              theme.colorScheme.secondary.withValues(alpha: 0.2),
+                            ],
+                          ),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primary.withValues(alpha: 0.1),
+                              theme.colorScheme.secondary.withValues(alpha: 0.2),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            place.category.icon,
+                            style: const TextStyle(fontSize: 80),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.colorScheme.primary.withValues(alpha: 0.1),
+                            theme.colorScheme.secondary.withValues(alpha: 0.2),
+                          ],
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          place.category.icon,
+                          style: const TextStyle(fontSize: 80),
+                        ),
+                      ),
                     ),
-                  ),
+
                   // 카테고리 라벨
                   Positioned(
                     top: 8,

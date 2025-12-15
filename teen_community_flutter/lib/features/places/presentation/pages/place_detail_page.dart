@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:ui' as ui;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+
+import 'place_detail_stub.dart'
+    if (dart.library.html) 'place_detail_web.dart';
 
 /// 장소 상세 페이지 (카카오맵 WebView/IFrame)
 class PlaceDetailPage extends StatefulWidget {
@@ -22,33 +22,25 @@ class PlaceDetailPage extends StatefulWidget {
 }
 
 class _PlaceDetailPageState extends State<PlaceDetailPage> {
-  late final WebViewController? _controller;
+  WebViewController? _controller;
   bool _isLoading = true;
-  final String _iframeId = 'kakao-map-iframe';
+  final String _iframeViewId = 'kakao-map-iframe';
 
   @override
   void initState() {
     super.initState();
     if (kIsWeb) {
-      _initWebIframe();
+      _initIframe();
     } else {
       _initWebView();
     }
   }
 
-  void _initWebIframe() {
-    // 웹용 iframe 초기화
-    // ignore: undefined_prefixed_name
-    ui.platformViewRegistry.registerViewFactory(
-      _iframeId,
-      (int viewId) => html.IFrameElement()
-        ..src = widget.url
-        ..style.border = 'none'
-        ..style.height = '100%'
-        ..style.width = '100%',
-    );
+  void _initIframe() {
+    // 웹용 iframe 등록
+    registerIframe(_iframeViewId, widget.url);
 
-    // 로딩 완료로 설정
+    // 로딩 완료
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
@@ -121,11 +113,11 @@ class _PlaceDetailPageState extends State<PlaceDetailPage> {
       ),
       body: Stack(
         children: [
-          // 플랫폼별 WebView/IFrame
+          // 플랫폼별 뷰
           if (kIsWeb)
-            HtmlElementView(viewType: _iframeId)
+            HtmlElementView(viewType: _iframeViewId)
           else if (_controller != null)
-            WebViewWidget(controller: _controller),
+            WebViewWidget(controller: _controller!),
 
           // 로딩 인디케이터
           if (_isLoading)
