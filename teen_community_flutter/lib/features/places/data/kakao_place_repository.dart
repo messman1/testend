@@ -94,8 +94,6 @@ class KakaoPlaceRepository {
   }
 
   /// 카테고리별 기본 썸네일
-  /// 참고: 카카오 이미지 검색 API는 CORS 이슈로 Flutter Web에서 사용 불가
-  /// 추후 Supabase Storage에 직접 이미지를 관리하는 방식으로 개선 예정
   static const defaultThumbnails = {
     'karaoke': 'https://search1.kakaocdn.net/argon/130x130_85_c/Kp2KXLzRwOd',
     'escape': 'https://search1.kakaocdn.net/argon/130x130_85_c/IxxsexaSwPv',
@@ -103,6 +101,50 @@ class KakaoPlaceRepository {
     'movie': 'https://search1.kakaocdn.net/argon/130x130_85_c/36hQpoTrVZp',
     'cafe': 'https://search1.kakaocdn.net/argon/130x130_85_c/E6HRx1AqOPY',
   };
+
+  /// 이미지 캐시
+  final Map<String, String?> _imageCache = {};
+
+  /// 카카오 이미지 검색 API로 장소 썸네일 가져오기
+  Future<String?> _searchPlaceImage(String placeName) async {
+    // 캐시 확인
+    if (_imageCache.containsKey(placeName)) {
+      return _imageCache[placeName];
+    }
+
+    try {
+      final response = await _dio.get(
+        'https://dapi.kakao.com/v2/search/image',
+        queryParameters: {
+          'query': placeName,
+          'size': 1,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'KakaoAK ${ApiConstants.kakaoApiKey}',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final documents = data['documents'] as List<dynamic>? ?? [];
+
+        if (documents.isNotEmpty) {
+          // image_url (원본 크기) 사용
+          final imageUrl = documents[0]['image_url'] as String?;
+          _imageCache[placeName] = imageUrl;
+          return imageUrl;
+        }
+      }
+
+      _imageCache[placeName] = null;
+      return null;
+    } catch (e) {
+      _imageCache[placeName] = null;
+      return null;
+    }
+  }
 
   /// 키워드로 장소 검색
   Future<List<PlaceModel>> searchPlaces({
@@ -139,18 +181,24 @@ class KakaoPlaceRepository {
             .where((place) => _isYouthFriendly(place as Map<String, dynamic>))
             .toList();
 
-        // PlaceModel로 변환 (카테고리별 기본 썸네일 사용)
-        return filteredPlaces.map<PlaceModel>((place) {
-          final placeMap = place as Map<String, dynamic>;
+        // PlaceModel로 변환 (썸네일 포함)
+        final places = <PlaceModel>[];
 
-          // 카테고리별 기본 썸네일 사용 (CORS 이슈로 이미지 검색 비활성화)
+        for (final place in filteredPlaces) {
+          final placeMap = place as Map<String, dynamic>;
+          final placeName = placeMap['place_name'] as String;
+
+          // 카카오 이미지 검색 API로 썸네일 가져오기
+          final thumbnail = await _searchPlaceImage(placeName);
+
+          // 기본 썸네일 fallback
           final defaultThumbnail = category != null
               ? defaultThumbnails[category.code]
               : null;
 
-          return PlaceModel(
+          places.add(PlaceModel(
             id: placeMap['id'] as String,
-            name: placeMap['place_name'] as String,
+            name: placeName,
             category: category ?? PlaceCategory.cafe,
             location: _extractLocation(placeMap['address_name'] as String? ?? ''),
             address: placeMap['road_address_name'] as String? ??
@@ -158,13 +206,15 @@ class KakaoPlaceRepository {
                 '',
             phone: placeMap['phone'] as String? ?? '',
             distance: _formatDistance(placeMap['distance'] as String? ?? '0'),
-            thumbnail: defaultThumbnail,
+            thumbnail: thumbnail ?? defaultThumbnail,
             url: placeMap['place_url'] as String,
             x: double.parse(placeMap['x'] as String),
             y: double.parse(placeMap['y'] as String),
             categoryDetail: placeMap['category_name'] as String?,
-          );
-        }).toList();
+          ));
+        }
+
+        return places;
       }
 
       return [];

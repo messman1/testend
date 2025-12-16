@@ -5,6 +5,8 @@ import '../../../../config/routes/route_names.dart';
 import '../../../location/providers/location_provider.dart';
 import '../../../places/providers/places_provider.dart';
 import '../../../places/domain/models/place_model.dart';
+import '../widgets/web_image_stub.dart'
+    if (dart.library.html) '../widgets/web_image_web.dart';
 
 /// 탐색 페이지
 class ExplorePage extends ConsumerStatefulWidget {
@@ -298,47 +300,42 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
                 children: [
                   // 썸네일 이미지 또는 카테고리 아이콘
                   if (place.thumbnail != null && place.thumbnail!.isNotEmpty)
-                    Image.network(
-                      place.thumbnail!,
+                    WebImage(
+                      imageUrl: place.thumbnail!,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                theme.colorScheme.primary.withValues(alpha: 0.1),
-                                theme.colorScheme.secondary.withValues(alpha: 0.2),
-                              ],
-                            ),
+                      placeholder: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primary.withValues(alpha: 0.1),
+                              theme.colorScheme.secondary.withValues(alpha: 0.2),
+                            ],
                           ),
-                          child: const Center(
-                            child: CircularProgressIndicator(),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      errorWidget: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              theme.colorScheme.primary.withValues(alpha: 0.1),
+                              theme.colorScheme.secondary.withValues(alpha: 0.2),
+                            ],
                           ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                theme.colorScheme.primary.withValues(alpha: 0.1),
-                                theme.colorScheme.secondary.withValues(alpha: 0.2),
-                              ],
-                            ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            place.category.icon,
+                            style: const TextStyle(fontSize: 80),
                           ),
-                          child: Center(
-                            child: Text(
-                              place.category.icon,
-                              style: const TextStyle(fontSize: 80),
-                            ),
-                          ),
-                        );
-                      },
+                        ),
+                      ),
                     )
                   else
                     Container(
