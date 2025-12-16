@@ -38,7 +38,8 @@
       "Bash(flutter run:*)",
       "Bash(flutter pub get:*)",
       "Bash(r)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(nc:*)"
     ]
   }
 }

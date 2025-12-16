@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/bookmarks_repository.dart';
 import '../../places/domain/models/place_model.dart';
+import 'profile_provider.dart';
 
 /// BookmarksRepository Provider
 final bookmarksRepositoryProvider = Provider<BookmarksRepository>((ref) {
@@ -43,8 +44,9 @@ class BookmarksController extends StateNotifier<AsyncValue<void>> {
         latitude: latitude,
         longitude: longitude,
       );
-      // 북마크 목록 새로고침
+      // 북마크 목록 및 통계 새로고침
       _ref.invalidate(bookmarkedPlacesProvider);
+      _ref.invalidate(userStatsProvider);
     });
   }
 
@@ -53,8 +55,9 @@ class BookmarksController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       await _repository.removeBookmark(placeUrl);
-      // 북마크 목록 새로고침
+      // 북마크 목록 및 통계 새로고침
       _ref.invalidate(bookmarkedPlacesProvider);
+      _ref.invalidate(userStatsProvider);
     });
   }
 

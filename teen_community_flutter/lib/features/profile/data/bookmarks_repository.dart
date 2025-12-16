@@ -9,7 +9,7 @@ class BookmarksRepository {
   Future<List<PlaceModel>> getBookmarkedPlaces() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) throw Exception('로그인이 필요합니다');
+      if (userId == null) return [];
 
       final response = await _supabase
           .from('bookmarks')
@@ -18,10 +18,23 @@ class BookmarksRepository {
           .order('created_at', ascending: false);
 
       return (response as List).map((bookmark) {
-        return PlaceModel.fromJson(bookmark);
+        // DB 컬럼을 PlaceModel 필드로 매핑 (최소한의 컬럼만 사용)
+        return PlaceModel(
+          id: bookmark['place_url'] ?? '',
+          name: bookmark['place_name'] ?? '',
+          category: PlaceCategory.cafe, // 기본값 사용
+          location: '',
+          address: '',
+          phone: '',
+          distance: '',
+          url: bookmark['place_url'] ?? '',
+          x: 0.0,
+          y: 0.0,
+        );
       }).toList();
     } catch (e) {
-      throw Exception('북마크 목록을 불러올 수 없습니다: $e');
+      print('북마크 목록 로드 실패: $e');
+      return [];
     }
   }
 
@@ -38,20 +51,18 @@ class BookmarksRepository {
   }) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
+      print('📌 addBookmark 호출: userId=$userId, placeName=$placeName');
       if (userId == null) throw Exception('로그인이 필요합니다');
 
+      // 최소한의 필수 컬럼만 사용
       await _supabase.from('bookmarks').insert({
         'user_id': userId,
-        'place_name': placeName,
         'place_url': placeUrl,
-        'category': category,
-        'location': location,
-        'address': address,
-        'phone': phone,
-        'latitude': latitude,
-        'longitude': longitude,
+        'place_name': placeName,
       });
+      print('📌 북마크 추가 성공!');
     } catch (e) {
+      print('📌 북마크 추가 실패: $e');
       throw Exception('북마크 추가에 실패했습니다: $e');
     }
   }

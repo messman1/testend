@@ -2,6 +2,12 @@ import 'package:dio/dio.dart';
 import '../../../config/constants/api_constants.dart';
 import '../domain/models/place_model.dart';
 
+/// 정렬 유형
+enum PlaceSortType {
+  distance,
+  rating,
+}
+
 /// 카카오 장소 검색 리포지토리
 class KakaoPlaceRepository {
   final Dio _dio;
@@ -154,8 +160,13 @@ class KakaoPlaceRepository {
     int radius = ApiConstants.searchRadius,
     int size = 15,
     PlaceCategory? category,
+    PlaceSortType sortType = PlaceSortType.rating,
   }) async {
     try {
+      // 카카오 API 정렬 기준: distance(거리순) 또는 accuracy(정확도순)
+      // 평점순(rating)은 API에서 지원하지 않으므로 accuracy로 받아와서 로컬 정렬
+      final apiSort = sortType == PlaceSortType.distance ? 'distance' : 'accuracy';
+
       final response = await _dio.get(
         'https://dapi.kakao.com/v2/local/search/keyword.json',
         queryParameters: {
@@ -164,6 +175,7 @@ class KakaoPlaceRepository {
           'y': y,
           'radius': radius,
           'size': size,
+          'sort': apiSort,
         },
         options: Options(
           headers: {
@@ -196,6 +208,14 @@ class KakaoPlaceRepository {
               ? defaultThumbnails[category.code]
               : null;
 
+          // 랜덤 평점 및 리뷰 수 생성 (API 미지원으로 인한 Mocking)
+          // ID를 시드로 사용하여 동일 장소는 항상 동일한 점수가 나오도록 함
+          final idHash = placeMap['id'].hashCode;
+          // 3.5 ~ 5.0 사이 평점
+          final mockRating = 3.5 + (idHash % 16) / 10.0;
+          // 10 ~ 500 사이 리뷰 수
+          final mockReviewCount = 10 + (idHash % 491);
+
           places.add(PlaceModel(
             id: placeMap['id'] as String,
             name: placeName,
@@ -211,8 +231,17 @@ class KakaoPlaceRepository {
             x: double.parse(placeMap['x'] as String),
             y: double.parse(placeMap['y'] as String),
             categoryDetail: placeMap['category_name'] as String?,
+            rating: double.parse(mockRating.toStringAsFixed(1)),
+            reviewCount: mockReviewCount,
           ));
         }
+
+        // 로컬 정렬
+        if (sortType == PlaceSortType.rating) {
+          // 평점순 정렬 (높은 순)
+          places.sort((a, b) => b.rating.compareTo(a.rating));
+        }
+        // distance는 API가 이미 정렬해서 줌
 
         return places;
       }
@@ -230,6 +259,7 @@ class KakaoPlaceRepository {
     required double y,
     int radius = ApiConstants.searchRadius,
     int size = 10,
+    PlaceSortType sortType = PlaceSortType.rating,
   }) async {
     final keyword = categoryKeywords[category.code] ?? '카페';
 
@@ -240,6 +270,7 @@ class KakaoPlaceRepository {
       radius: radius,
       size: size,
       category: category,
+      sortType: sortType,
     );
 
     return places.take(size).toList();
@@ -269,6 +300,11 @@ class KakaoPlaceRepository {
         continue;
       }
     }
+
+
+
+    // 평점순 정렬 (높은 순)
+    allPlaces.sort((a, b) => b.rating.compareTo(a.rating));
 
     return allPlaces;
   }

@@ -34,6 +34,8 @@ class PlaceModel {
   final double x; // 경도
   final double y; // 위도
   final String? categoryDetail; // 카카오 카테고리 상세
+  final double rating;
+  final int reviewCount;
 
   const PlaceModel({
     required this.id,
@@ -48,6 +50,8 @@ class PlaceModel {
     required this.x,
     required this.y,
     this.categoryDetail,
+    this.rating = 0.0,
+    this.reviewCount = 0,
   });
 
   /// JSON에서 PlaceModel 생성
@@ -66,6 +70,8 @@ class PlaceModel {
       x: (json['x'] as num).toDouble(),
       y: (json['y'] as num).toDouble(),
       categoryDetail: json['categoryDetail'] as String?,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: json['reviewCount'] as int? ?? 0,
     );
   }
 
@@ -84,12 +90,14 @@ class PlaceModel {
       'x': x,
       'y': y,
       'categoryDetail': categoryDetail,
+      'rating': rating,
+      'reviewCount': reviewCount,
     };
   }
 
   @override
   String toString() {
-    return 'PlaceModel(id: $id, name: $name, category: ${category.label}, distance: $distance)';
+    return 'PlaceModel(id: $id, name: $name, category: ${category.label}, distance: $distance, rating: $rating)';
   }
 
   @override

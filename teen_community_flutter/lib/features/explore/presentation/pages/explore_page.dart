@@ -4,13 +4,19 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/routes/route_names.dart';
 import '../../../location/providers/location_provider.dart';
 import '../../../places/providers/places_provider.dart';
+import '../../../places/data/kakao_place_repository.dart';
 import '../../../places/domain/models/place_model.dart';
 import '../widgets/web_image_stub.dart'
     if (dart.library.html) '../widgets/web_image_web.dart';
 
 /// 탐색 페이지
 class ExplorePage extends ConsumerStatefulWidget {
-  const ExplorePage({super.key});
+  final String? initialCategory;
+
+  const ExplorePage({
+    super.key,
+    this.initialCategory,
+  });
 
   @override
   ConsumerState<ExplorePage> createState() => _ExplorePageState();
@@ -18,8 +24,16 @@ class ExplorePage extends ConsumerStatefulWidget {
 
 class _ExplorePageState extends ConsumerState<ExplorePage> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedCategory = 'all'; // 'all' or PlaceCategory code
+  late String _selectedCategory;
   String _searchTerm = '';
+  PlaceSortType _sortType = PlaceSortType.rating; // 기본 정렬: 평점순
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategory = widget.initialCategory ?? 'all';
+  }
+
 
   @override
   void dispose() {
@@ -86,45 +100,85 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
 
           const SizedBox(height: 12),
 
-          // 위치 태그
-          InkWell(
-            onTap: () {
-              ref.read(locationControllerProvider.notifier).refreshLocation();
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
+          // 위치 태그 및 정렬 옵션 row
+          Row(
+            children: [
+              // 위치 태그
+              InkWell(
+                onTap: () {
+                  ref.read(locationControllerProvider.notifier).refreshLocation();
+                },
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '📍 ${locationState.address ?? "현재 위치"}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
                     ),
                   ),
-                  if (locationState.isLoading) ...[
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.primary,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '📍 ${locationState.address ?? "현재 위치"}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                ],
+                      if (locationState.isLoading) ...[
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
-            ),
+              const Spacer(),
+              // 정렬 옵션 드롭다운
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<PlaceSortType>(
+                    value: _sortType,
+                    icon: const Icon(Icons.sort, size: 20),
+                    style: theme.textTheme.bodyMedium,
+                    items: const [
+                      DropdownMenuItem(
+                        value: PlaceSortType.distance,
+                        child: Text('거리순'),
+                      ),
+                      DropdownMenuItem(
+                        value: PlaceSortType.rating,
+                        child: Text('평점순'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _sortType = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -218,6 +272,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
             latitude: locationState.latitude!,
             longitude: locationState.longitude!,
             size: 15,
+            sortType: _sortType, // 정렬 옵션 전달
           )));
 
     return placesAsync.when(
@@ -286,6 +341,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
         onTap: () {
           context.push(
             '${RouteNames.placeDetail}?url=${Uri.encodeComponent(place.url)}&name=${Uri.encodeComponent(place.name)}',
+            extra: place,
           );
         },
         child: Column(
@@ -420,14 +476,35 @@ class _ExplorePageState extends ConsumerState<ExplorePage> {
                   ),
                   const SizedBox(height: 4),
 
-                  // 주소
-                  Text(
-                    place.address,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+
+                  // 주소 및 평점
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          place.address,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.star, size: 14, color: Colors.amber),
+                      Text(
+                        ' ${place.rating}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        ' (${place.reviewCount})',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 8),

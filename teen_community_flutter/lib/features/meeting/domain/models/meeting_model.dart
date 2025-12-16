@@ -101,10 +101,12 @@ class MeetingModel {
 
 /// 모임 카테고리
 enum MeetingCategory {
-  study('study', '📚', '공부'),
-  game('game', '🎮', '게임'),
-  sports('sports', '⚽', '운동'),
-  hobby('hobby', '🎨', '취미'),
+  karaoke('karaoke', '🎤', '코인노래방'),
+  escape('escape', '🎯', '방탈출'),
+  board('board', '🎲', '보드게임'),
+  movie('movie', '🎬', '영화관'),
+  cafe('cafe', '📚', '북카페'),
+  study('study', '📝', '스터디'),
   etc('etc', '💬', '기타');
 
   final String code;

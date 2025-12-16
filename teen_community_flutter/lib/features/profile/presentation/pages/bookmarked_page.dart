@@ -82,6 +82,7 @@ class BookmarkedPage extends ConsumerWidget {
         onTap: () {
           context.push(
             '${RouteNames.placeDetail}?url=${Uri.encodeComponent(place.url)}&name=${Uri.encodeComponent(place.name)}',
+            extra: place,
           );
         },
         child: Padding(

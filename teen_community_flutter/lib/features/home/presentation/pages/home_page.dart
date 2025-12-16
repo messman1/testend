@@ -20,12 +20,8 @@ class HomePage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 환영 섹션
-          _buildWelcomeSection(theme),
-          const SizedBox(height: 24),
-
-          // 빠른 액션
-          _buildQuickActions(context, theme),
+          // 오늘 뭐하지? (히어로 섹션)
+          _buildHeroSection(context, theme),
           const SizedBox(height: 32),
 
           // 인기 카테고리
@@ -39,98 +35,78 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  /// 환영 섹션
-  Widget _buildWelcomeSection(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Text(
-              '환영합니다!',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '친구들과 함께 즐거운 시간을 보낼 장소를 찾아보세요',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-              textAlign: TextAlign.center,
-            ),
+  /// 히어로 섹션 (오늘 뭐하지?)
+  Widget _buildHeroSection(BuildContext context, ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      height: 120, // 더 크게
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.tertiary,
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-    );
-  }
-
-  /// 빠른 액션
-  Widget _buildQuickActions(BuildContext context, ThemeData theme) {
-    return Column(
-      children: [
-        // 오늘 뭐하지? (메인 액션)
-        SizedBox(
-          width: double.infinity,
-          height: 60,
-          child: ElevatedButton(
-            onPressed: () => context.push(RouteNames.recommend),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.push(RouteNames.recommend),
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
               children: [
-                Text('🎯', style: TextStyle(fontSize: 24)),
-                SizedBox(width: 12),
-                Text('오늘 뭐하지?', style: TextStyle(fontSize: 18)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        '오늘 뭐하지?',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'AI와 함께 만드는 완벽한 하루',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Text(
+                    '🎯',
+                    style: TextStyle(fontSize: 32),
+                  ),
+                ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 12),
-
-        // 주변 장소 찾기 & 모임 만들기
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 56,
-                child: OutlinedButton(
-                  onPressed: () => context.push(RouteNames.explore),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('📍', style: TextStyle(fontSize: 20)),
-                      SizedBox(height: 2),
-                      Text('주변 장소 찾기', style: TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SizedBox(
-                height: 56,
-                child: OutlinedButton(
-                  onPressed: () => context.push(RouteNames.meetingCreate),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('👥', style: TextStyle(fontSize: 20)),
-                      SizedBox(height: 2),
-                      Text('모임 만들기', style: TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
@@ -149,43 +125,63 @@ class HomePage extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            '인기 카테고리',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '인기 카테고리',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push(RouteNames.explore),
+                child: const Text('더보기'),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 12, // Increased spacing
+          runSpacing: 12,
           children: categories.map((cat) {
+            // 3 items per row approx
+            final itemWidth = (MediaQuery.of(context).size.width - 32 - 24) / 3; 
+            
             return SizedBox(
-              width: (MediaQuery.of(context).size.width - 48) / 2,
-              child: Card(
-                child: InkWell(
-                  onTap: () => context.push(
-                    '${RouteNames.explore}?category=${cat['category']}',
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Text(
+              width: itemWidth,
+              child: Column(
+                children: [
+                  InkWell(
+                    onTap: () => context.push(
+                      '${RouteNames.explore}?category=${cat['category']}',
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      width: double.infinity,
+                      height: itemWidth,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Center(
+                        child: Text(
                           cat['icon'] as String,
-                          style: const TextStyle(fontSize: 40),
+                          style: const TextStyle(fontSize: 32),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          cat['label'] as String,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                     cat['label'] as String,
+                     style: theme.textTheme.bodyMedium?.copyWith(
+                       fontWeight: FontWeight.w500,
+                     ),
+                     textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             );
           }).toList(),
@@ -215,22 +211,37 @@ class HomePage extends ConsumerWidget {
                   ),
                 ),
               ),
-              IconButton(
-                icon: locationState.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('🔄', style: TextStyle(fontSize: 20)),
-                onPressed: locationState.isLoading
+              // 세련된 새로고침 버튼
+              InkWell(
+                onTap: locationState.isLoading
                     ? null
                     : () {
                         ref
                             .read(locationControllerProvider.notifier)
                             .refreshLocation();
                       },
-                tooltip: '위치 새로고침',
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: locationState.isLoading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        )
+                      : Icon(
+                          Icons.refresh_rounded,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                ),
               ),
             ],
           ),
@@ -262,105 +273,32 @@ class HomePage extends ConsumerWidget {
 
         const SizedBox(height: 12),
 
-        // 위치 정보 카드
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text('📍', style: TextStyle(fontSize: 24)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '현재 위치',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            locationState.address ?? '위치 정보 없음',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (locationState.hasLocation) ...[
-                  const SizedBox(height: 12),
-                  const Divider(),
+        // 위치 정보 카드 제거됨 - 인기 장소 목록만 표시
+        if (locationState.hasLocation)
+          _buildPlacesList(ref, theme, locationState)
+        else
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    '🏪',
+                    style: theme.textTheme.headlineLarge,
+                  ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildLocationInfo(
-                          theme,
-                          '위도',
-                          locationState.latitude?.toStringAsFixed(4) ?? '-',
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildLocationInfo(
-                          theme,
-                          '경도',
-                          locationState.longitude?.toStringAsFixed(4) ?? '-',
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '위치 정보를 가져오는 중...',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.6),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
-                const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 12),
-
-                // 인기 장소 목록
-                if (locationState.hasLocation)
-                  _buildPlacesList(ref, theme, locationState)
-                else
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Text(
-                            '🏪',
-                            style: theme.textTheme.headlineLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '위치 정보를 가져오는 중...',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -457,6 +395,7 @@ class HomePage extends ConsumerWidget {
           // 장소 상세 페이지로 이동
           context.push(
             '${RouteNames.placeDetail}?url=${Uri.encodeComponent(place.url)}&name=${Uri.encodeComponent(place.name)}',
+            extra: place,
           );
         },
       child: Padding(
@@ -528,6 +467,26 @@ class HomePage extends ConsumerWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color:
                               theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      Text(
+                        ' | ',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color:
+                              theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      Text(
+                        '⭐ ${place.rating}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.amber,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        ' (${place.reviewCount})',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
                       ),
                       Text(

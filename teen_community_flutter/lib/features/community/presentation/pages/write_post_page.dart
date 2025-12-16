@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/post_model.dart';
-import '../../providers/posts_provider.dart';
-import '../../../auth/providers/auth_provider.dart';
+import '../../providers/community_provider.dart';
 
-/// 글쓰기 페이지
 class WritePostPage extends ConsumerStatefulWidget {
   const WritePostPage({super.key});
 
@@ -16,7 +14,8 @@ class WritePostPage extends ConsumerStatefulWidget {
 class _WritePostPageState extends ConsumerState<WritePostPage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  String _selectedType = 'general';
+  PostType _selectedType = PostType.normal;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -26,49 +25,48 @@ class _WritePostPageState extends ConsumerState<WritePostPage> {
   }
 
   Future<void> _submitPost() async {
-    final user = await ref.read(currentUserProvider.future);
-    if (user == null) {
-      if (!mounted) return;
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+
+    if (title.isEmpty || content.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인이 필요합니다')),
+        const SnackBar(content: Text('제목과 내용을 모두 입력해주세요.')),
       );
       return;
     }
 
-    if (_titleController.text.trim().isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제목을 입력하세요')),
-      );
-      return;
-    }
-
-    if (_contentController.text.trim().isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('내용을 입력하세요')),
-      );
-      return;
-    }
+    setState(() => _isLoading = true);
 
     try {
-      await ref.read(postsControllerProvider.notifier).createPost(
-            title: _titleController.text.trim(),
-            content: _contentController.text.trim(),
-            type: _selectedType,
-          );
+      // PostModel creation for submission
+      // ID, counts, createdAt will be handled by DB or ignored by insert
+      final newPost = PostModel(
+        id: '', 
+        title: title,
+        content: content,
+        authorNickname: '', // Backend handles this or we fetch profile
+        createdAt: DateTime.now(),
+        likesCount: 0,
+        commentsCount: 0,
+        type: _selectedType,
+      );
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('게시글이 작성되었습니다')),
-      );
-      if (!mounted) return;
-      context.pop();
+      await ref.read(communityControllerProvider.notifier).createPost(newPost);
+
+      if (mounted) {
+        context.pop(); // Go back to Community Page
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('게시글이 등록되었습니다.')),
+        );
+      }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('게시글 작성에 실패했습니다: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('게시글 등록 실패: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -79,105 +77,101 @@ class _WritePostPageState extends ConsumerState<WritePostPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('글쓰기'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
         actions: [
           TextButton(
-            onPressed: _submitPost,
-            child: const Text('완료', style: TextStyle(fontSize: 16)),
+            onPressed: _isLoading ? null : _submitPost,
+            child: Text(
+              '완료',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: _isLoading ? Colors.grey : theme.colorScheme.primary,
+              ),
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 타입 선택
-            DropdownButtonFormField<String>(
-              initialValue: _selectedType,
-              decoration: const InputDecoration(
-                labelText: '카테고리',
+            // Type Selector
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: PostType.values.map((type) {
+                  // Don't allow creating 'new' types randomly if strictly managed, 
+                  // but allowing all for now as requested.
+                  final isSelected = _selectedType == type;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(_getTypeLabel(type)),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) setState(() => _selectedType = type);
+                      },
+                      selectedColor: theme.colorScheme.primaryContainer,
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-              items: PostType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type.code,
-                  child: Row(
-                    children: [
-                      Text(type.icon, style: const TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Text(type.label),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedType = value!;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // 제목
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '제목',
-                hintText: '제목을 입력하세요',
-              ),
-              maxLength: 100,
-            ),
-            const SizedBox(height: 16),
-
-            // 내용
-            TextField(
-              controller: _contentController,
-              decoration: const InputDecoration(
-                labelText: '내용',
-                hintText: '내용을 입력하세요',
-                alignLabelWithHint: true,
-              ),
-              maxLines: 10,
-              maxLength: 1000,
             ),
             const SizedBox(height: 24),
 
-            // 작성 안내
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+            // Title Input
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                hintText: '제목을 입력하세요',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text('📝', style: TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Text(
-                        '작성 시 유의사항',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '• 욕설, 비방, 음란물 등 부적절한 내용은 삼가주세요\n'
-                    '• 개인정보(전화번호, 주소 등)는 공개하지 마세요\n'
-                    '• 존중하는 마음으로 소통해요',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
+              maxLines: 1,
+            ),
+            const Divider(height: 32),
+
+            // Content Input
+            TextField(
+              controller: _contentController,
+              decoration: const InputDecoration(
+                hintText: '나누고 싶은 이야기를 적어보세요.',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              style: theme.textTheme.bodyLarge,
+              maxLines: null,
+              minLines: 10,
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _getTypeLabel(PostType type) {
+    switch (type) {
+      case PostType.normal:
+        return '자유';
+      case PostType.newOpen:
+        return '신규 오픈';
+      case PostType.review:
+        return '후기';
+      case PostType.event:
+        return '이벤트';
+    }
   }
 }

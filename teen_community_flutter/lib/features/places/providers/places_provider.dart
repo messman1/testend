@@ -30,6 +30,7 @@ final categoryPlacesProvider = FutureProvider.family<List<PlaceModel>, CategoryP
       x: params.longitude,
       y: params.latitude,
       size: params.size,
+      sortType: params.sortType,
     );
   },
 );
@@ -66,12 +67,14 @@ class CategoryParams {
   final double latitude;
   final double longitude;
   final int size;
+  final PlaceSortType sortType;
 
   const CategoryParams({
     required this.category,
     required this.latitude,
     required this.longitude,
     this.size = 10,
+    this.sortType = PlaceSortType.rating,
   });
 
   @override
@@ -81,10 +84,15 @@ class CategoryParams {
         other.category == category &&
         other.latitude == latitude &&
         other.longitude == longitude &&
-        other.size == size;
+        other.size == size &&
+        other.sortType == sortType;
   }
 
   @override
   int get hashCode =>
-      category.hashCode ^ latitude.hashCode ^ longitude.hashCode ^ size.hashCode;
+      category.hashCode ^
+      latitude.hashCode ^
+      longitude.hashCode ^
+      size.hashCode ^
+      sortType.hashCode;
 }

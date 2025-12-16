@@ -31,7 +31,10 @@ class AppScaffold extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🐶 시험끝 오늘은 놀자!'),
+        title: InkWell(
+          onTap: () => context.go(RouteNames.home),
+          child: const Text('🐶 시험끝 오늘은 놀자!'),
+        ),
         automaticallyImplyLeading: false,
       ),
       body: child,

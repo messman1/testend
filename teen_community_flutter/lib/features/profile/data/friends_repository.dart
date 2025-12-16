@@ -53,7 +53,10 @@ class FriendsRepository {
         return FriendModel.fromJson(profile);
       }).toList();
     } catch (e) {
-      throw Exception('친구 목록을 불러올 수 없습니다: $e');
+      // 백엔드 테이블이 없거나 오류 발생 시 빈 리스트 반환 (또는 더미 데이터)
+      // 앱이 죽지 않도록 예외 처리
+      print('친구 목록 로드 실패 (백엔드 오류 무시): $e');
+      return []; 
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../config/routes/route_names.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../providers/profile_provider.dart';
 
 /// 프로필 페이지
 class ProfilePage extends ConsumerWidget {
@@ -124,7 +125,7 @@ class ProfilePage extends ConsumerWidget {
           ],
 
           // 활동 통계
-          _buildStatsSection(theme),
+          _buildStatsSection(context, ref, theme),
           const SizedBox(height: 24),
 
           // 메뉴 섹션
@@ -278,59 +279,71 @@ class ProfilePage extends ConsumerWidget {
   }
 
   /// 활동 통계
-  Widget _buildStatsSection(ThemeData theme) {
-    final stats = [
-      {'label': '찜한 장소', 'value': 0, 'icon': '🔖'},
-      {'label': '참여한 모임', 'value': 0, 'icon': '👥'},
-      {'label': '작성한 글', 'value': 0, 'icon': '✏️'},
-    ];
+  Widget _buildStatsSection(BuildContext context, WidgetRef ref, ThemeData theme) {
+    final statsAsync = ref.watch(userStatsProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            '활동 통계',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: stats.map((stat) {
-            return Expanded(
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text(
-                        stat['icon'] as String,
-                        style: const TextStyle(fontSize: 32),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${stat['value']}',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        stat['label'] as String,
-                        style: theme.textTheme.bodySmall,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+    return statsAsync.when(
+      data: (stats) {
+        final postCount = stats['postCount'] ?? 0;
+        final meetingCount = stats['meetingCount'] ?? 0;
+        final bookmarkCount = stats['bookmarkCount'] ?? 0;
+
+        final statsList = [
+          {'label': '찜한 장소', 'value': bookmarkCount, 'icon': '🔖'},
+          {'label': '참여한 모임', 'value': meetingCount, 'icon': '👥'},
+          {'label': '작성한 글', 'value': postCount, 'icon': '✏️'},
+        ];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                '활동 통계',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            );
-          }).toList(),
-        ),
-      ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: statsList.map((stat) {
+                return Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            stat['icon'] as String,
+                            style: const TextStyle(fontSize: 32),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${stat['value']}',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            stat['label'] as String,
+                            style: theme.textTheme.bodySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
+      error: (e, stack) => const Text('통계 로드 실패'),
     );
   }
 

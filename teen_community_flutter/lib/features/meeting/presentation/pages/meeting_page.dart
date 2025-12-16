@@ -3,10 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/meeting_model.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/meetings_provider.dart';
+import '../../../places/providers/places_provider.dart';
+import '../../../places/domain/models/place_model.dart';
+import '../../../location/providers/location_provider.dart';
+import '../../../recommend/presentation/pages/recommend_page.dart';
 
 /// 모임 목록 페이지
 class MeetingPage extends ConsumerStatefulWidget {
-  const MeetingPage({super.key});
+  final Object? extra;
+
+  const MeetingPage({super.key, this.extra});
 
   @override
   ConsumerState<MeetingPage> createState() => _MeetingPageState();
@@ -20,9 +26,34 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
-  String _category = 'study';
+  String _category = 'karaoke'; // 기본값 변경
   int _maxParticipants = 4;
   DateTime _meetingDate = DateTime.now().add(const Duration(days: 1));
+
+  @override
+  void initState() {
+    super.initState();
+    // 추천 코스로부터 생성된 경우 처리
+    if (widget.extra is RecommendationCourse) {
+      final course = widget.extra as RecommendationCourse;
+      _isCreating = true;
+      _titleController.text = course.title;
+      _descriptionController.text = '${course.description}\n\n[코스 상세]\n${course.places.asMap().entries.map((e) => '${e.key + 1}. ${e.value.name}').join('\n')}';
+      
+      if (course.places.isNotEmpty) {
+        // 첫 번째 장소 기준
+        final firstPlace = course.places.first;
+        // 카테고리 매핑 (MeetingCategory와 PlaceCategory가 호환된다고 가정)
+        // 만약 호환되지 않는다면 추가 로직 필요하지만, 앞서 통일했으므로 그대로 사용 시도
+        // 다만 MeetingCategory에 없는 코드가 올 수 있으므로 안전하게 처리
+         if (MeetingCategory.fromCode(firstPlace.category.code) != null) {
+            _category = firstPlace.category.code;
+         }
+         
+        _locationController.text = firstPlace.name;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -40,7 +71,7 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
         _titleController.clear();
         _descriptionController.clear();
         _locationController.clear();
-        _category = 'study';
+        _category = 'karaoke';
         _maxParticipants = 4;
         _meetingDate = DateTime.now().add(const Duration(days: 1));
       }
@@ -141,6 +172,19 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
           SnackBar(content: Text('오류: ${error.toString()}')),
         );
       },
+    );
+  }
+  
+  // 장소 검색 다이얼로그
+  void _showPlaceSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _PlaceSearchDialog(
+        selectedCategory: _category,
+        onPlaceSelected: (placeName) {
+          _locationController.text = placeName;
+        },
+      ),
     );
   }
 
@@ -494,7 +538,7 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
 
           // 카테고리
           DropdownButtonFormField<String>(
-            initialValue: _category,
+            value: _category,
             decoration: const InputDecoration(
               labelText: '카테고리',
             ),
@@ -519,12 +563,27 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
           const SizedBox(height: 16),
 
           // 장소
-          TextField(
-            controller: _locationController,
-            decoration: const InputDecoration(
-              labelText: '모임 장소',
-              hintText: '예: 강남역 근처 보드게임 카페',
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _locationController,
+                  decoration: const InputDecoration(
+                    labelText: '모임 장소',
+                    hintText: '예: 강남역 근처 보드게임 카페',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: _showPlaceSearchDialog,
+                icon: const Icon(Icons.search),
+                label: const Text('장소 검색'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -646,6 +705,156 @@ class _MeetingPageState extends ConsumerState<MeetingPage> {
               child: const Text('참가하기'),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// 장소 검색 다이얼로그
+class _PlaceSearchDialog extends ConsumerStatefulWidget {
+  final String selectedCategory;
+  final Function(String) onPlaceSelected;
+
+  const _PlaceSearchDialog({
+    required this.selectedCategory,
+    required this.onPlaceSelected,
+  });
+
+  @override
+  ConsumerState<_PlaceSearchDialog> createState() => _PlaceSearchDialogState();
+}
+
+class _PlaceSearchDialogState extends ConsumerState<_PlaceSearchDialog> {
+  final _searchController = TextEditingController();
+  List<PlaceModel> _places = [];
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    // 초기 검색 (카테고리명으로)
+    final category = MeetingCategory.fromCode(widget.selectedCategory);
+    if (category != null) {
+      _searchController.text = category.label;
+      _searchPlaces();
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchPlaces() async {
+    final keyword = _searchController.text.trim();
+    if (keyword.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final locationState = ref.read(currentLocationProvider);
+      final repository = ref.read(kakaoPlaceRepositoryProvider);
+
+      if (locationState.latitude == null || locationState.longitude == null) {
+        throw Exception('위치 정보를 가져올 수 없습니다.');
+      }
+
+      final places = await repository.searchPlaces(
+        keyword: keyword,
+        x: locationState.longitude!,
+        y: locationState.latitude!,
+        size: 15,
+      );
+
+      if (mounted) {
+        setState(() {
+          _places = places;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        width: double.infinity,
+        height: 500, // 고정 높이
+        child: Column(
+          children: [
+            const Text(
+              '장소 검색',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      hintText: '장소 이름 검색',
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) => _searchPlaces(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _searchPlaces,
+                  icon: const Icon(Icons.search),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(child: Text(_error!))
+                      : _places.isEmpty
+                          ? const Center(child: Text('검색 결과가 없습니다.'))
+                          : ListView.separated(
+                              itemCount: _places.length,
+                              separatorBuilder: (_, __) => const Divider(),
+                              itemBuilder: (context, index) {
+                                final place = _places[index];
+                                return ListTile(
+                                  title: Text(place.name),
+                                  subtitle: Text('${place.distance} | ${place.address}'),
+                                  onTap: () {
+                                    widget.onPlaceSelected(place.name);
+                                    Navigator.of(context).pop();
+                                  },
+                                );
+                              },
+                            ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('닫기'),
+            ),
+          ],
+        ),
       ),
     );
   }
